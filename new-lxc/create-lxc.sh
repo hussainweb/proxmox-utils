@@ -133,6 +133,13 @@ $SSH_PUBLIC_KEY
 EOT
 EOF
 
+# Create state directory if it doesn't exist
+STATE_DIR="./states"
+mkdir -p "$STATE_DIR"
+
+# Set state file path based on VMID
+STATE_FILE="$STATE_DIR/terraform-$VMID.tfstate"
+
 echo "Created terraform.tfvars with the following configuration:"
 echo "  VMID: $VMID"
 echo "  Hostname: $HOSTNAME"
@@ -143,5 +150,20 @@ echo "  Memory: $MEMORY MB"
 echo "  Unprivileged: $UNPRIVILEGED"
 echo "  Node: $NODE"
 echo "  SSH Key: $SSH_PUBLIC_KEY_PATH"
+echo "  State File: $STATE_FILE"
 echo ""
-echo "Run 'terraform init' and 'terraform apply' to create the container."
+
+# Initialize terraform if not already initialized
+if [[ ! -d ".terraform" ]]; then
+    echo "Initializing Terraform..."
+    terraform init
+    echo ""
+fi
+
+# Apply terraform configuration
+echo "Creating container..."
+terraform apply -state="$STATE_FILE" -auto-approve
+
+echo ""
+echo "Container created successfully!"
+echo "State file saved to: $STATE_FILE"
