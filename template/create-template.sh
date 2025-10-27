@@ -9,7 +9,7 @@
 # Optional:
 #   --vm-id ID               VM ID (default: 8000)
 #   --storage STORAGE        Storage name (default: local-lvm)
-#   --ssh-key FILE           SSH public key file (default: ~/.ssh/id_rsa.pub)
+#   --ssh-key FILE           SSH public key file (default: ~/.ssh/id_ed25519.pub)
 #   -h, --help               Show this help message
 
 set -e
@@ -48,7 +48,7 @@ while [[ $# -gt 0 ]]; do
             echo "Optional:"
             echo "  --vm-id ID               VM ID (default: 8000)"
             echo "  --storage STORAGE        Storage name (default: local-lvm)"
-            echo "  --ssh-key FILE           SSH public key file (default: ~/.ssh/id_rsa.pub)"
+            echo "  --ssh-key FILE           SSH public key file (default: ~/.ssh/id_ed25519.pub)"
             echo "  -h, --help               Show this help message"
             exit 0
             ;;
