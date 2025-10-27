@@ -44,12 +44,24 @@ if [[ ! -f "$STATE_FILE" ]]; then
     exit 1
 fi
 
+# Create backend configuration
+cat > backend.tf << EOF
+terraform {
+  backend "local" {
+    path = "$STATE_FILE"
+  }
+}
+EOF
+
 echo "Found state file: $STATE_FILE"
 echo "Destroying container with VMID: $VMID"
 echo ""
 
+# Initialize terraform with backend
+terraform init -reconfigure
+
 # Destroy terraform resources
-terraform destroy -state="$STATE_FILE" -auto-approve
+terraform destroy -auto-approve
 
 echo ""
 echo "Container destroyed successfully!"

@@ -5,43 +5,31 @@ set -e
 # Function to display usage
 usage() {
     cat << EOF
-Usage: $0 --vmid VMID
+Usage: $0 VMID
 
 Destroy a Proxmox VM using Terraform.
 
-Required Options:
-    --vmid VMID                VMID of the VM to destroy
-
-Options:
-    -h, --help                 Show this help message
+Arguments:
+    VMID    VMID of the VM to destroy
 
 Example:
-    $0 --vmid 100
+    $0 100
 
 EOF
     exit 1
 }
 
-# Parse arguments
-while [[ $# -gt 0 ]]; do
-    case $1 in
-        --vmid)
-            VMID="$2"
-            shift 2
-            ;;
-        -h|--help)
-            usage
-            ;;
-        *)
-            echo "Unknown option: $1"
-            usage
-            ;;
-    esac
-done
+# Check for help flag
+if [[ "$1" == "-h" || "$1" == "--help" ]]; then
+    usage
+fi
 
-# Validate required parameters
+# Get VMID from first argument
+VMID="$1"
+
+# Validate required parameter
 if [[ -z "$VMID" ]]; then
-    echo "Error: Missing required parameter --vmid"
+    echo "Error: Missing required argument VMID"
     usage
 fi
 
@@ -56,11 +44,23 @@ if [[ ! -f "$STATE_FILE" ]]; then
     exit 1
 fi
 
+# Create backend configuration
+cat > backend.tf << EOF
+terraform {
+  backend "local" {
+    path = "$STATE_FILE"
+  }
+}
+EOF
+
 echo "Destroying VM $VMID using state file: $STATE_FILE"
 echo ""
 
+# Initialize terraform with backend
+terraform init -reconfigure
+
 # Destroy terraform resources
-terraform destroy -state="$STATE_FILE" -auto-approve
+terraform destroy -auto-approve
 
 echo ""
 echo "VM $VMID destroyed successfully!"

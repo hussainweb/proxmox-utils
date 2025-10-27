@@ -122,6 +122,22 @@ fi
 # Read SSH public key
 SSH_PUBLIC_KEY=$(cat "$SSH_PUBLIC_KEY_PATH")
 
+# Create state directory if it doesn't exist
+STATE_DIR="./states"
+mkdir -p "$STATE_DIR"
+
+# Set state file path based on VMID
+STATE_FILE="$STATE_DIR/terraform-$VMID.tfstate"
+
+# Create backend configuration
+cat > backend.tf << EOF
+terraform {
+  backend "local" {
+    path = "$STATE_FILE"
+  }
+}
+EOF
+
 # Create terraform.tfvars
 cat > terraform.tfvars << EOF
 vmid               = $VMID
@@ -139,13 +155,6 @@ $SSH_PUBLIC_KEY
 EOT
 EOF
 
-# Create state directory if it doesn't exist
-STATE_DIR="./states"
-mkdir -p "$STATE_DIR"
-
-# Set state file path based on VMID
-STATE_FILE="$STATE_DIR/terraform-$VMID.tfstate"
-
 echo "Created terraform.tfvars with the following configuration:"
 echo "  VMID: $VMID"
 echo "  Hostname: $HOSTNAME"
@@ -162,16 +171,14 @@ echo "  SSH Key: $SSH_PUBLIC_KEY_PATH"
 echo "  State File: $STATE_FILE"
 echo ""
 
-# Initialize terraform if not already initialized
-if [[ ! -d ".terraform" ]]; then
-    echo "Initializing Terraform..."
-    terraform init
-    echo ""
-fi
+# Reinitialize terraform with new backend
+echo "Initializing Terraform..."
+terraform init -reconfigure
+echo ""
 
 # Apply terraform configuration
 echo "Creating VM..."
-terraform apply -state="$STATE_FILE" -auto-approve
+terraform apply -auto-approve
 
 echo ""
 echo "VM created successfully!"
