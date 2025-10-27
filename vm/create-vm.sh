@@ -9,7 +9,7 @@ MEMORY=2048
 DISK_SIZE="20G"
 PASSWORD=""
 SSH_PUBLIC_KEY_PATH="$HOME/.ssh/id_ed25519.pub"
-BIOS="ovmf"  # UEFI
+BIOS="seabios"
 STORAGE="local-lvm"
 CLONE_TEMPLATE_ID=""
 
@@ -29,7 +29,7 @@ Optional:
     --disk DISK                Disk size (default: 20G)
     --cores CORES              CPU cores (default: 2)
     --memory MEMORY            RAM in MB (default: 2048)
-    --bios BIOS                BIOS type: ovmf (UEFI) or seabios (default: ovmf)
+    --bios BIOS                BIOS type: ovmf (UEFI) or seabios (default: seabios)
     --node NODE                Proxmox node (default: erebor)
     --storage STORAGE          Storage for VM disks (default: local-lvm)
     --clone-from TEMPLATE_ID   Clone from existing template ID (optional)

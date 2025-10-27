@@ -42,7 +42,7 @@ variable "password" {
 variable "bios" {
   description = "BIOS type: ovmf (UEFI) or seabios"
   type        = string
-  default     = "ovmf"
+  default     = "seabios"
 }
 
 variable "storage" {
