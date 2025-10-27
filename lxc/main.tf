@@ -5,6 +5,10 @@ terraform {
       version = "3.0.2-rc05"
     }
   }
+
+  backend "local" {
+    # Backend configuration will be provided via backend.tfbackend
+  }
 }
 
 provider "proxmox" {

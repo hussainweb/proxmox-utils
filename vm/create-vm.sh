@@ -130,12 +130,8 @@ mkdir -p "$STATE_DIR"
 STATE_FILE="$STATE_DIR/terraform-$VMID.tfstate"
 
 # Create backend configuration
-cat > backend.tf << EOF
-terraform {
-  backend "local" {
-    path = "$STATE_FILE"
-  }
-}
+cat > backend.tfbackend << EOF
+path = "$STATE_FILE"
 EOF
 
 # Create terraform.tfvars
@@ -173,7 +169,7 @@ echo ""
 
 # Reinitialize terraform with new backend
 echo "Initializing Terraform..."
-terraform init -reconfigure
+terraform init -reconfigure -backend-config=backend.tfbackend
 echo ""
 
 # Apply terraform configuration
