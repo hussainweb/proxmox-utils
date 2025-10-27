@@ -89,6 +89,7 @@ resource "proxmox_vm_qemu" "vm" {
   ciuser     = "root"
   cipassword = var.password != "" ? var.password : null
   sshkeys    = var.ssh_public_keys
+  cicustom   = "user=nfslorien:snippets/docker-cloud-init.yaml"
 
   # Serial console for cloud-init
   serial {
