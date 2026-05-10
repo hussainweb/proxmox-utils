@@ -1,31 +1,16 @@
-# Proxmox VM Creator
+# Proxmox Virtual Machine Management
 
-A simple script and Terraform module to create Proxmox VMs with cloud-init support.
+This directory contains utility scripts and Terraform configurations for provisioning Virtual Machines with cloud-init support.
 
-## Prerequisites
-
-1. Terraform installed
-2. Proxmox API credentials set as environment variables:
-   ```bash
-   export PROXMOX_VE_ENDPOINT="https://proxmox.example.com:8006/"
-   export PROXMOX_VE_API_TOKEN="user@pam!mytoken=your-token-uuid"
-   export PROXMOX_VE_INSECURE=true  # if using self-signed certificates
-   ```
+For general prerequisites and setup, please refer to the [root README](../README.md).
 
 ## Usage
 
-### Using the Script
+### `create-vm.sh`
 
-The script generates a `terraform.tfvars` file with your configuration and manages state files per VMID:
+The script generates a `terraform.tfvars` file and manages state files per VMID in the `states/` directory.
 
-#### Create from scratch (requires cloud-init image)
-```bash
-./create-vm.sh \
-  --hostname myvm \
-  --vmid 100
-```
-
-#### Clone from existing template
+#### Clone from existing template (Recommended)
 ```bash
 ./create-vm.sh \
   --hostname myvm \
@@ -36,176 +21,52 @@ The script generates a `terraform.tfvars` file with your configuration and manag
   --memory 4096
 ```
 
-### Required Parameters
-- `--hostname HOSTNAME` - Hostname for the VM
-- `--vmid VMID` - VMID for the VM
+### Parameters
 
-### Optional Parameters
-- `--password PASSWORD` - Root password (default: blank)
-- `--disk DISK` - Disk size (default: 20G)
-- `--cores CORES` - CPU cores (default: 2)
-- `--memory MEMORY` - RAM in MB (default: 2048)
-- `--bios BIOS` - BIOS type: ovmf (UEFI) or seabios (default: ovmf)
-- `--node NODE` - Proxmox node (default: erebor)
-- `--storage STORAGE` - Storage for VM disks (default: local-lvm)
-- `--clone-from TEMPLATE_ID` - Clone from existing template ID
-- `--ssh-key PATH` - Path to SSH public key (default: ~/.ssh/id_ed25519.pub)
+- `--hostname HOSTNAME` - **Required**.
+- `--vmid VMID` - **Required**.
+- `--clone-from TEMPLATE_ID` - Clone from existing template ID.
+- `--password PASSWORD` - Root password (default: blank).
+- `--disk DISK` - Disk size (default: 20G).
+- `--cores CORES` - CPU cores (default: 2).
+- `--memory MEMORY` - RAM in MB (default: 2048).
+- `--bios BIOS` - `ovmf` (UEFI) or `seabios` (Legacy) (default: `ovmf`).
+- `--node NODE` - Proxmox node (default: `erebor`).
+- `--storage STORAGE` - Storage for disks (default: `local-lvm`).
+- `--ssh-key PATH` - Path to public key (default: `~/.ssh/id_ed25519.pub`).
+
+### `destroy-vm.sh`
+
+Destroys a VM and removes its specific state file:
+
+```bash
+./destroy-vm.sh --vmid 101
+```
 
 ## State Management
 
-The script automatically manages separate state files for each VM in the `states/` directory:
-- State files are named: `states/terraform-{VMID}.tfstate`
-- This allows multiple VMs to be managed independently
+State files are stored in `states/terraform-{VMID}.tfstate`. This allows you to manage multiple VMs independently using the same Terraform configuration.
 
-## Cloud-init Support
+## Cloud-init & Templates
 
-The VM is configured with cloud-init, which allows:
-- Automatic hostname configuration
-- SSH key injection
-- Optional password authentication
-- Network configuration (DHCP by default)
+Ensure your template has cloud-init installed and a cloud-init drive attached. 
 
-### Template Requirements
-
-If cloning from a template (recommended), ensure your template:
-1. Has cloud-init installed and configured
-2. Is marked as a template in Proxmox
-3. Has a cloud-init drive attached
-
-### Creating a Cloud-init Template
-
-You can create a template manually in Proxmox:
-
+### Manual Template Creation Example
 ```bash
 # Download Ubuntu cloud image
 wget https://cloud-images.ubuntu.com/releases/resolute/release/ubuntu-26.04-server-cloudimg-amd64.img
-
-# Create VM
-qm create 9000 --name ubuntu-cloud-template --memory 2048 --cores 2 --net0 virtio,bridge=vmbr0
-
-# Import disk
+# Import and configure
+qm create 9000 --name ubuntu-template --memory 2048 --cores 2 --net0 virtio,bridge=vmbr0
 qm importdisk 9000 ubuntu-26.04-server-cloudimg-amd64.img local-lvm
-
-# Attach disk
 qm set 9000 --scsihw virtio-scsi-pci --scsi0 local-lvm:vm-9000-disk-0
-
-# Add cloud-init drive
 qm set 9000 --ide2 local-lvm:cloudinit
-
-# Set boot disk
 qm set 9000 --boot c --bootdisk scsi0
-
-# Enable QEMU agent
 qm set 9000 --agent enabled=1
-
-# Convert to template
 qm template 9000
-```
-
-## Examples
-
-### Minimal VM (using defaults)
-```bash
-./create-vm.sh --hostname test-vm --vmid 100
-```
-
-### Clone with custom resources
-```bash
-./create-vm.sh \
-  --hostname prod-server \
-  --vmid 200 \
-  --clone-from 9000 \
-  --disk 50G \
-  --cores 4 \
-  --memory 8192 \
-  --password mySecurePassword
-```
-
-### Legacy BIOS VM
-```bash
-./create-vm.sh \
-  --hostname legacy-vm \
-  --vmid 150 \
-  --bios seabios \
-  --clone-from 9000
-```
-
-## Destroying VMs
-
-To destroy a VM:
-
-```bash
-./destroy-vm.sh --vmid 100
-```
-
-This will:
-1. Use the state file for the specified VMID
-2. Destroy the VM via Terraform
-3. Remove the state file
-
-## Configuration
-
-### Storage
-
-By default, the module uses `local-lvm` for storage. Use the `--storage` option to specify a different storage backend.
-
-### Network
-
-The VM is configured with:
-- Network interface: virtio
-- Bridge: vmbr0
-- IP: DHCP
-
-To use static IP, you'll need to modify the `ipconfig0` setting in `main.tf` after running the script.
-
-### BIOS Types
-
-- `ovmf` (UEFI) - Modern BIOS, required for some OS features, supports Secure Boot
-- `seabios` - Legacy BIOS, better compatibility with older systems
-
-## Direct Terraform Usage
-
-You can also use Terraform directly by creating your own `terraform.tfvars`:
-
-```hcl
-vmid              = 100
-hostname          = "myvm"
-disk_size         = "20G"
-cores             = 2
-cpu_type          = "host"
-memory            = 2048
-node              = "erebor"
-password          = ""
-bios              = "ovmf"
-storage           = "local-lvm"
-clone_template_id = 9000
-ssh_public_keys   = <<-EOT
-ssh-ed25519 AAAAC3NzaC1lZDI1NTE5... user@host
-EOT
-```
-
-Then run:
-```bash
-terraform init
-terraform plan -state=states/terraform-100.tfstate
-terraform apply -state=states/terraform-100.tfstate
 ```
 
 ## Troubleshooting
 
-### VM doesn't start
-- Check that cloud-init is installed in the template
-- Verify BIOS setting matches your OS requirements (UEFI vs Legacy)
-- Check Proxmox logs: `journalctl -u pve-cluster`
-
-### Can't connect via SSH
-- Wait a few minutes for cloud-init to complete
-- Check VM console in Proxmox web interface
-- Verify SSH key is correct
-- Check cloud-init status: `cloud-init status`
-
-### Disk resize doesn't work
-- Ensure you're using a template with cloud-init
-- Some filesystems require manual resize inside the VM
-- Check if the disk was actually resized in Proxmox web interface
-oxmox web interface
+- **VM doesn't start:** Verify BIOS type matches the OS.
+- **No SSH access:** Wait for cloud-init completion; check Proxmox console.
+- **Disk resize fails:** Ensure template has cloud-init and supports online resize.
