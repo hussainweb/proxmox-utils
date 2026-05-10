@@ -29,6 +29,10 @@ apt:
 packages:
   - qemu-guest-agent
   - sudo
+  # Homebrew dependencies
+  - build-essential
+  - procps
+  - file
   # Docker
   - docker-ce
   - docker-ce-cli
@@ -55,5 +59,11 @@ packages:
   - xh
 
 runcmd:
-  - [ chsh, -s, /usr/bin/fish ]
-  - [ sudo, usermod, -aG, docker, hw ]
+  - [ chsh, -s, /usr/bin/fish, hw ]
+  - [ usermod, -aG, docker, hw ]
+  # Install Homebrew
+  - su - hw -c 'NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"'
+  # Setup Homebrew for Fish
+  - su - hw -c 'mkdir -p ~/.config/fish && echo "eval (/home/linuxbrew/.linuxbrew/bin/brew shellenv)" >> ~/.config/fish/config.fish'
+  # Install chezmoi and apply dotfiles
+  - su - hw -c 'eval (/home/linuxbrew/.linuxbrew/bin/brew shellenv) && brew install chezmoi && chezmoi init --apply hussainweb'

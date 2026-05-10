@@ -22,6 +22,10 @@ package_upgrade: true
 packages:
   - qemu-guest-agent
   - sudo
+  # Homebrew dependencies
+  - build-essential
+  - procps
+  - file
   # CLI tools
   - fish
   - bat
@@ -42,4 +46,10 @@ packages:
   - xh
 
 runcmd:
-  - [ chsh, -s, /usr/bin/fish ]
+  - [ chsh, -s, /usr/bin/fish, hw ]
+  # Install Homebrew
+  - su - hw -c 'NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"'
+  # Setup Homebrew for Fish
+  - su - hw -c 'mkdir -p ~/.config/fish && echo "eval (/home/linuxbrew/.linuxbrew/bin/brew shellenv)" >> ~/.config/fish/config.fish'
+  # Install chezmoi and apply dotfiles
+  - su - hw -c 'eval (/home/linuxbrew/.linuxbrew/bin/brew shellenv) && brew install chezmoi && chezmoi init --apply hussainweb'
