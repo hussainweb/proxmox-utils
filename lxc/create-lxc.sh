@@ -7,7 +7,7 @@ UNPRIVILEGED=true
 NODE="erebor"
 CORES=2
 MEMORY=2048
-TEMPLATE="ubuntu-24.04-standard_24.04-2_amd64.tar.zst"
+TEMPLATE="ubuntu-26.04-standard_26.04-1_amd64.tar.zst"
 TEMPLATE_VOLUME="local"
 PASSWORD=""
 SSH_PUBLIC_KEY_PATH="$HOME/.ssh/id_ed25519.pub"
@@ -26,7 +26,7 @@ Required Options:
 
 Optional:
     --password PASSWORD         Root password for the container (optional)
-    --template TEMPLATE         Template name (default: ubuntu-24.04-standard_24.04-2_amd64.tar.zst)
+    --template TEMPLATE         Template name (default: ubuntu-26.04-standard_26.04-1_amd64.tar.zst)
     --template-volume VOLUME   Template storage volume (default: local)
     --privileged               Create privileged container (default: unprivileged)
     --node NODE                Proxmox node (default: erebor)

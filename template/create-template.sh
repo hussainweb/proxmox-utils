@@ -64,8 +64,8 @@ done
 CICUSTOM_SNIPPET="nfslorien:snippets/docker-cloud-init.yaml"
 
 # Ubuntu cloud image
-IMAGE_URL="https://cloud-images.ubuntu.com/releases/noble/release/ubuntu-24.04-server-cloudimg-amd64.img"
-IMAGE_FILE="ubuntu-24.04-server-cloudimg-amd64.img"
+IMAGE_URL="https://cloud-images.ubuntu.com/releases/resolute/release/ubuntu-26.04-server-cloudimg-amd64.img"
+IMAGE_FILE="ubuntu-26.04-server-cloudimg-amd64.img"
 
 # Validate SSH_HOST is provided
 if [ -z "$SSH_HOST" ]; then

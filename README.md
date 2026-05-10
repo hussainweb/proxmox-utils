@@ -6,7 +6,7 @@ A collection of utility scripts and Terraform configurations for provisioning an
 
 - `lxc/`: Contains a bash wrapper (`create-lxc.sh`) and Terraform configuration to provision Proxmox LXC containers.
 - `vm/`: Contains a bash wrapper (`create-vm.sh`) and Terraform configuration to provision Proxmox Virtual Machines, including cloning from templates with cloud-init integration.
-- `template/`: Contains a bash script (`create-template.sh`) to connect to a Proxmox host via SSH and build an Ubuntu 24.04 cloud-init template directly on the host.
+- `template/`: Contains a bash script (`create-template.sh`) to connect to a Proxmox host via SSH and build an Ubuntu 26.04 cloud-init template directly on the host.
 
 ## Prerequisites
 

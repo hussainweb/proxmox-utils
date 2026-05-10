@@ -21,7 +21,7 @@ The script generates a `terraform.tfvars` file with your configuration:
 
 ```bash
 ./create-lxc.sh \
-  --template local:vztmpl/ubuntu-22.04-standard_22.04-1_amd64.tar.zst \
+  --template local:vztmpl/ubuntu-26.04-standard_26.04-1_amd64.tar.zst \
   --password mySecurePassword123 \
   --disk 20G \
   --hostname mycontainer \
@@ -52,7 +52,7 @@ You can also use Terraform directly by creating your own `terraform.tfvars`:
 ```hcl
 vmid            = 100
 hostname        = "mycontainer"
-template        = "local:vztmpl/ubuntu-22.04-standard_22.04-1_amd64.tar.zst"
+template        = "local:vztmpl/ubuntu-26.04-standard_26.04-1_amd64.tar.zst"
 disk_size       = "20G"
 cores           = 2
 memory          = 2048
@@ -83,7 +83,7 @@ Modify the network block in `main.tf` if you need static IP configuration.
 
 ### Minimal Example (using defaults)
 ```bash
-./create-lxc.sh --template local:vztmpl/ubuntu-22.04-standard_22.04-1_amd64.tar.zst \
+./create-lxc.sh --template local:vztmpl/ubuntu-26.04-standard_26.04-1_amd64.tar.zst \
   --password pass123 --disk 10G --hostname test-container --vmid 101
 ```
 
