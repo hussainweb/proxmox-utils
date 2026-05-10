@@ -13,7 +13,7 @@ terraform {
 
 provider "proxmox" {
   # Configuration should be provided via environment variables:
-  # PROXMOX_VE_ENDPOINT, PROXMOX_VE_USERNAME, PROXMOX_VE_PASSWORD, PROXMOX_VE_INSECURE
+  # PROXMOX_VE_ENDPOINT, PROXMOX_VE_API_TOKEN, PROXMOX_VE_INSECURE
 }
 
 resource "proxmox_virtual_environment_container" "container" {

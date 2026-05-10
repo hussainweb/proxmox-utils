@@ -8,8 +8,7 @@ A simple script and Terraform module to create Proxmox LXC containers.
 2. Proxmox API credentials set as environment variables:
    ```bash
    export PROXMOX_VE_ENDPOINT="https://proxmox.example.com:8006/"
-   export PROXMOX_VE_USERNAME="root@pam"
-   export PROXMOX_VE_PASSWORD="your-password"
+   export PROXMOX_VE_API_TOKEN="user@pam!mytoken=your-token-uuid"
    export PROXMOX_VE_INSECURE=true  # if using self-signed certificates
    ```
 
