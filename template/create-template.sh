@@ -111,8 +111,13 @@ echo ""
 # SSH command prefix
 SSH="ssh $SSH_HOST"
 
-echo "Step 1: Downloading Ubuntu cloud image..."
-$SSH "wget -q --show-progress $IMAGE_URL || wget $IMAGE_URL"
+echo "Step 1: Checking/Downloading Ubuntu cloud image..."
+if $SSH "test -f $IMAGE_FILE"; then
+    echo "Image $IMAGE_FILE already exists, skipping download."
+else
+    echo "Downloading Ubuntu cloud image..."
+    $SSH "wget -q --show-progress $IMAGE_URL || wget $IMAGE_URL"
+fi
 
 echo ""
 echo "Step 2: Creating VM..."
