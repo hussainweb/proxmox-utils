@@ -1,0 +1,45 @@
+#cloud-config
+hostname: ubuntu
+manage_etc_hosts: true
+fqdn: ubuntu
+user: hw
+password: $5$nMxnFZW2$enzzcGfpai4VIvBiMhas9yzefalm9LD9ozJC9FprEJD
+ssh_authorized_keys:
+  - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIKmYR+MsIXzdK7mpmE3iUdeFwtmXi9/3mn9ypMiCyW5B
+  - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQC70yhYwHyJm0qUatZwbQxLat3pYIAjr7p24dWSXzFnRR3eLstn/YikDyIWX0pxpIwJbyer+D1LMisz54tqjJsql5JdT9slA5TwS7wOvtktQnquaK3RZnI8kQTvBjPQaWBAv0x8mmgjdDU6WA4DcbBs8mxjnWtcaEaq0sPSsqf0JUWNteD3ug44cfnnPd6WNjCYnFlqGJJ9NQw9bFkuv+gBMFFqqic6UnQ5S7jFbzR1p+OMwbvbOXuHSSFrwtEGvw1mprOoVfn4lUsnTp5h0hz5PGgydZJqkkb9SAgN1XcSJLPG5iRv3pr3nKxstFxR7h+R1c/D8cQ1g4sbdkyNfNsl4AKvZYt7m+NFeBXWflXPM04pGnqy+d+i6nfO8ea6tOvsmPSHuTgiA7So3oYwEFlJPX6hl3/JO5YtlBYTL7g3pX9lgOCm9+biopXEYjbO5GsIkvtcsuNuvReWWhE6kj0SyXDgb0hWGJbRY2BB46x0pm57d36AYvOis4WZQGN2o0TB1jgzda2xflGTEK9gaSeqQUferDkyAvTPxvI1tjL9ys75eZ5TPE10nfnlLOWWh1Gl8eH2uZq5HP8uh6x47kMFyVVLg8uO/PsrK7/p3xGHBAn+9AmSeL8SY3zb0nOYdQl9+GpyZr0x+qDtXX9A91Fe60VCo6WCpKSynG3UI5mFZQ==
+chpasswd:
+  expire: False
+users:
+  - name: hw
+    shell: /bin/bash
+    sudo: ['ALL=(ALL) NOPASSWD:ALL']
+    ssh_import_id:
+      - gh:hussainweb
+
+package_update: true
+package_upgrade: true
+
+packages:
+  - qemu-guest-agent
+  - sudo
+  # CLI tools
+  - fish
+  - bat
+  - eza
+  - eza-bash-completion
+  - ripgrep
+  - bottom
+  - curl
+  - httpie
+  - git
+  - git-delta
+  - htop
+  - btop
+  - jq
+  - unzip
+  - vim
+  - wget
+  - xh
+
+runcmd:
+  - [ chsh, -s, /usr/bin/fish ]
