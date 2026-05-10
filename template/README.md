@@ -20,6 +20,7 @@ Automates the creation of an Ubuntu 26.04 cloud-init VM template. It downloads t
 - `--vm-id ID`: VM ID for the template (default: `8000`).
 - `--storage STORAGE`: Proxmox storage name (default: `local-lvm`).
 - `--ssh-key FILE`: Public key to inject into the template (default: `~/.ssh/id_ed25519.pub`).
+- `--snippet LABEL|PATH`: Snippet label (`basic`, `docker`) or full path (default: `docker`).
 
 ### `manage-snippets.sh`
 
@@ -38,6 +39,9 @@ Manages cloud-init snippets stored on Proxmox. Snippets are useful for custom co
 
 # Upload a custom cloud-init config
 ./manage-snippets.sh upload --ssh-host root@pve --file docker-cloud-init.yaml
+
+# Run template script with a custom snippet path
+./create-template.sh --ssh-host root@pve --snippet local:snippets/custom-init.yaml
 ```
 
 ## Cloud-init Snippets

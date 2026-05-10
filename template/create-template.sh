@@ -19,6 +19,7 @@ VM_ID="8000"
 STORAGE="local-lvm"
 SSH_HOST=""
 SSH_KEY_FILE="$HOME/.ssh/id_ed25519.pub"
+SNIPPET_LABEL="docker"
 
 # Parse command line arguments
 while [[ $# -gt 0 ]]; do
@@ -39,6 +40,10 @@ while [[ $# -gt 0 ]]; do
             SSH_KEY_FILE="$2"
             shift 2
             ;;
+        --snippet)
+            SNIPPET_LABEL="$2"
+            shift 2
+            ;;
         -h|--help)
             echo "Usage: $0 --ssh-host HOST [OPTIONS]"
             echo ""
@@ -49,6 +54,7 @@ while [[ $# -gt 0 ]]; do
             echo "  --vm-id ID               VM ID (default: 8000)"
             echo "  --storage STORAGE        Storage name (default: local-lvm)"
             echo "  --ssh-key FILE           SSH public key file (default: ~/.ssh/id_ed25519.pub)"
+            echo "  --snippet LABEL|PATH     Snippet label (basic, docker) or full path (default: docker)"
             echo "  -h, --help               Show this help message"
             exit 0
             ;;
@@ -60,8 +66,18 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-# Cloud-init snippet path
-CICUSTOM_SNIPPET="nfslorien:snippets/docker-cloud-init.yaml"
+# Resolve cloud-init snippet path
+case "$SNIPPET_LABEL" in
+    basic)
+        CICUSTOM_SNIPPET="nfslorien:snippets/basic-cloud-init.yaml"
+        ;;
+    docker)
+        CICUSTOM_SNIPPET="nfslorien:snippets/docker-cloud-init.yaml"
+        ;;
+    *)
+        CICUSTOM_SNIPPET="$SNIPPET_LABEL"
+        ;;
+esac
 
 # Ubuntu cloud image
 IMAGE_URL="https://cloud-images.ubuntu.com/releases/resolute/release/ubuntu-26.04-server-cloudimg-amd64.img"
