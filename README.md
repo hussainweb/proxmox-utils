@@ -6,7 +6,7 @@ A collection of utility scripts and Terraform configurations for provisioning an
 
 - `lxc/`: Contains a bash wrapper (`create-lxc.sh`) and Terraform configuration to provision Proxmox LXC containers.
 - `vm/`: Contains a bash wrapper (`create-vm.sh`) and Terraform configuration to provision Proxmox Virtual Machines, including cloning from templates with cloud-init integration.
-- `template/`: Contains a bash script (`create-template.sh`) to connect to a Proxmox host via SSH and build an Ubuntu 26.04 cloud-init template directly on the host.
+- `template/`: Contains scripts to build an Ubuntu 26.04 cloud-init template (`create-template.sh`) and a comprehensive snippet manager (`manage-snippets.sh`) for cloud-init configurations via SSH.
 
 ## Prerequisites
 
@@ -50,3 +50,24 @@ cd template
 ```
 
 This will download an Ubuntu cloud image, import it into Proxmox via SSH, configure cloud-init, and optionally convert it into a reusable template.
+
+### Managing Snippets
+
+You can use the `manage-snippets.sh` script to list, upload, download, or delete snippets on your Proxmox host:
+
+```bash
+cd template
+# List snippets
+./manage-snippets.sh list --ssh-host root@proxmox
+
+# Upload a local file
+./manage-snippets.sh upload --ssh-host root@proxmox --file docker-cloud-init.yaml.new
+
+# Download for editing
+./manage-snippets.sh download --ssh-host root@proxmox --file docker-cloud-init.yaml --local-path ./temp.yaml
+
+# Delete a snippet
+./manage-snippets.sh delete --ssh-host root@proxmox --file old-config.yaml
+```
+
+This ensures snippets are correctly placed on the Proxmox storage (default: `nfslorien`) so it can be used by VMs and templates.
