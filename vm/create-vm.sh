@@ -11,7 +11,7 @@ PASSWORD=""
 SSH_PUBLIC_KEY_PATH="$HOME/.ssh/id_ed25519.pub"
 BIOS="seabios"
 STORAGE="local-lvm"
-CLONE_TEMPLATE_ID=""
+CLONE_TEMPLATE_ID=0
 
 # Function to display usage
 usage() {
@@ -167,7 +167,7 @@ echo "  Memory: $MEMORY MB"
 echo "  BIOS: $BIOS"
 echo "  Node: $NODE"
 echo "  Storage: $STORAGE"
-if [[ -n "$CLONE_TEMPLATE_ID" ]]; then
+if [[ "$CLONE_TEMPLATE_ID" != "0" ]]; then
     echo "  Clone from template: $CLONE_TEMPLATE_ID"
 fi
 echo "  SSH Key: $SSH_PUBLIC_KEY_PATH"
