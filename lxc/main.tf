@@ -1,8 +1,8 @@
 terraform {
   required_providers {
     proxmox = {
-      source  = "telmate/proxmox"
-      version = "3.0.2-rc07"
+      source  = "bpg/proxmox"
+      version = "~> 0.106.0"
     }
   }
 
@@ -13,49 +13,65 @@ terraform {
 
 provider "proxmox" {
   # Configuration should be provided via environment variables:
-  # PM_API_URL, PM_USER, PM_PASS, PM_TLS_INSECURE
+  # PROXMOX_VE_ENDPOINT, PROXMOX_VE_USERNAME, PROXMOX_VE_PASSWORD, PROXMOX_VE_INSECURE
 }
 
-resource "proxmox_lxc" "container" {
-  vmid         = var.vmid
-  hostname     = var.hostname
-  target_node  = var.node
-  ostemplate   = var.template
-  password     = var.password
-  unprivileged = var.unprivileged
-  start        = true
+resource "proxmox_virtual_environment_container" "container" {
+  vm_id       = var.vmid
+  node_name   = var.node
+  description = "Managed by Terraform"
 
-  ssh_public_keys = var.ssh_public_keys
-
-  # Root filesystem
-  rootfs {
-    storage = "local-lvm"
-    size    = var.disk_size
+  initialization {
+    hostname = var.hostname
+    
+    ip_config {
+      ipv4 {
+        address = "dhcp"
+      }
+    }
+    
+    user_account {
+      keys     = [var.ssh_public_keys]
+      password = var.password
+    }
   }
 
-  # Network
-  network {
-    name   = "eth0"
-    bridge = "vmbr0"
-    ip     = "dhcp"
+  network_interface {
+    name = "eth0"
   }
 
-  # Resources
-  cores  = var.cores
-  memory = var.memory
+  operating_system {
+    template_file_id = var.template
+    type             = "unmanaged"
+  }
 
-  # Features
+  disk {
+    datastore_id = "local-lvm"
+    size         = tonumber(replace(var.disk_size, "G", ""))
+  }
+
+  cpu {
+    cores = var.cores
+  }
+
+  memory {
+    dedicated = var.memory
+  }
+
   features {
     nesting = true
   }
+
+  unprivileged = var.unprivileged
+  started      = true
 }
 
 output "container_id" {
-  value       = proxmox_lxc.container.vmid
+  value       = proxmox_virtual_environment_container.container.vm_id
   description = "The VMID of the created container"
 }
 
 output "hostname" {
-  value       = proxmox_lxc.container.hostname
+  value       = proxmox_virtual_environment_container.container.initialization[0].hostname
   description = "The hostname of the created container"
 }

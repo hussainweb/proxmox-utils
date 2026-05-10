@@ -11,11 +11,11 @@ A collection of utility scripts and Terraform configurations for provisioning an
 ## Prerequisites
 
 - **Terraform:** Ensure Terraform is installed on your local machine to run the `lxc` and `vm` provisioning.
-- **Proxmox Credentials:** The Terraform Telmate provider requires environment variables for authentication. Set the following before running the wrapper scripts:
-  - `PM_API_URL` (e.g., `https://proxmox:8006/api2/json`)
-  - `PM_USER`
-  - `PM_PASS`
-  - `PM_TLS_INSECURE=true` (if using self-signed certificates)
+- **Proxmox Credentials:** The Terraform BPG provider requires environment variables for authentication. Set the following before running the wrapper scripts:
+  - `PROXMOX_VE_ENDPOINT` (e.g., `https://proxmox:8006/`)
+  - `PROXMOX_VE_USERNAME`
+  - `PROXMOX_VE_PASSWORD`
+  - `PROXMOX_VE_INSECURE=true` (if using self-signed certificates)
 
 ## Usage
 

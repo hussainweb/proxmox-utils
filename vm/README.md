@@ -7,10 +7,10 @@ A simple script and Terraform module to create Proxmox VMs with cloud-init suppo
 1. Terraform installed
 2. Proxmox API credentials set as environment variables:
    ```bash
-   export PM_API_URL="https://proxmox.example.com:8006/api2/json"
-   export PM_USER="root@pam"
-   export PM_PASS="your-password"
-   export PM_TLS_INSECURE=true  # if using self-signed certificates
+   export PROXMOX_VE_ENDPOINT="https://proxmox.example.com:8006/"
+   export PROXMOX_VE_USERNAME="root@pam"
+   export PROXMOX_VE_PASSWORD="your-password"
+   export PROXMOX_VE_INSECURE=true  # if using self-signed certificates
    ```
 
 ## Usage

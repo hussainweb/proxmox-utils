@@ -1,8 +1,8 @@
 terraform {
   required_providers {
     proxmox = {
-      source  = "telmate/proxmox"
-      version = "3.0.2-rc07"
+      source  = "bpg/proxmox"
+      version = "~> 0.106.0"
     }
   }
 
@@ -13,109 +13,89 @@ terraform {
 
 provider "proxmox" {
   # Configuration should be provided via environment variables:
-  # PM_API_URL, PM_USER, PM_PASS, PM_TLS_INSECURE
+  # PROXMOX_VE_ENDPOINT, PROXMOX_VE_USERNAME, PROXMOX_VE_PASSWORD, PROXMOX_VE_INSECURE
 }
 
-resource "proxmox_vm_qemu" "vm" {
-  vmid        = var.vmid
+resource "proxmox_virtual_environment_vm" "vm" {
+  vm_id       = var.vmid
   name        = var.hostname
-  target_node = var.node
-
-  # Clone configuration (if template ID is provided)
-  clone_id = var.clone_template_id != 0 ? var.clone_template_id : null
-
-  # Full clone (not linked)
-  full_clone = var.clone_template_id != 0 ? true : null
-
-  # BIOS setting
+  node_name   = var.node
+  description = "Managed by Terraform"
+  
   bios = var.bios
 
-  # Boot configuration
-  onboot = true
-  agent  = 1
+  # Clone configuration (if template ID is provided)
+  dynamic "clone" {
+    for_each = var.clone_template_id != 0 ? [1] : []
+    content {
+      vm_id = var.clone_template_id
+      full  = true
+    }
+  }
 
-  # CPU and Memory
-  memory = var.memory
+  agent {
+    enabled = true
+  }
+
   cpu {
     cores = var.cores
   }
 
-  # Network
-  network {
-    id     = 0
-    model  = "virtio"
+  memory {
+    dedicated = var.memory
+  }
+
+  network_device {
     bridge = "vmbr0"
+    model  = "virtio"
   }
 
-  # Disk configuration
-  scsihw = "virtio-scsi-pci"
+  # Disks
+  disk {
+    datastore_id = var.storage
+    file_format  = "raw"
+    interface    = "scsi0"
+    size         = tonumber(replace(var.disk_size, "G", ""))
+  }
 
-  dynamic "disk" {
-    for_each = var.clone_template_id != 0 ? [] : [1]
-    content {
-      slot    = "scsi0"
-      type    = "disk"
-      storage = var.storage
-      size    = var.disk_size
-      format  = "raw"
+  # Cloud-Init
+  initialization {
+    datastore_id = var.storage
+    
+    ip_config {
+      ipv4 {
+        address = "dhcp"
+      }
     }
-  }
 
-  # If cloning, resize the disk
-  dynamic "disk" {
-    for_each = var.clone_template_id != 0 ? [1] : []
-    content {
-      type    = "disk"
-      storage = var.storage
-      size    = var.disk_size
-      slot    = "scsi0"
+    user_account {
+      username = "root"
+      password = var.password != "" ? var.password : null
+      keys     = [var.ssh_public_keys]
     }
+
+    user_data_file_id = "nfslorien:snippets/docker-cloud-init.yaml"
   }
 
-  dynamic "disk" {
-    for_each = [1]
-    content {
-      slot    = "ide2"
-      type    = "cloudinit"
-      storage = var.storage
-    }
-  }
-
-  # Cloud-init configuration
-  os_type   = "cloud-init"
-  ipconfig0 = "ip=dhcp"
-
-  # Cloud-init settings
-  ciuser     = "root"
-  cipassword = var.password != "" ? var.password : null
-  sshkeys    = var.ssh_public_keys
-  cicustom   = "user=nfslorien:snippets/docker-cloud-init.yaml"
-
-  # Serial console for cloud-init
-  serial {
-    id   = 0
-    type = "socket"
-  }
-
-  # VGA configuration
   vga {
     type = "std"
   }
 
-  # Lifecycle
+  started = true
+
   lifecycle {
     ignore_changes = [
-      network,
+      network_device,
     ]
   }
 }
 
 output "vm_id" {
-  value       = proxmox_vm_qemu.vm.vmid
+  value       = proxmox_virtual_environment_vm.vm.vm_id
   description = "The VMID of the created VM"
 }
 
 output "hostname" {
-  value       = proxmox_vm_qemu.vm.name
+  value       = proxmox_virtual_environment_vm.vm.name
   description = "The hostname of the created VM"
 }
