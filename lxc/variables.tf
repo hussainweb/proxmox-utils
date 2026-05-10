@@ -52,3 +52,15 @@ variable "ssh_public_keys" {
   description = "SSH public keys to add to the container"
   type        = string
 }
+
+variable "nesting" {
+  description = "Whether to enable nesting for the container"
+  type        = bool
+  default     = true
+}
+
+variable "keyctl" {
+  description = "Whether to enable keyctl for the container"
+  type        = bool
+  default     = true
+}

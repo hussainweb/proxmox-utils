@@ -29,6 +29,8 @@ The script generates a `terraform.tfvars` file with your configuration:
 
 Optional parameters:
 - `--privileged` - Create a privileged container (default: unprivileged)
+- `--no-nesting` - Disable nesting (default: enabled)
+- `--no-keyctl` - Disable keyctl (default: enabled)
 - `--node NODE` - Proxmox node (default: erebor)
 - `--cores CORES` - CPU cores (default: 2)
 - `--memory MEMORY` - RAM in MB (default: 2048)
@@ -55,7 +57,9 @@ template        = "local:vztmpl/ubuntu-26.04-standard_26.04-1_amd64.tar.zst"
 disk_size       = "20G"
 cores           = 2
 memory          = 2048
-unprivileged    = 1
+unprivileged    = true
+nesting         = true
+keyctl          = true
 node            = "erebor"
 password        = "mySecurePassword123"
 ssh_public_keys = <<-EOT

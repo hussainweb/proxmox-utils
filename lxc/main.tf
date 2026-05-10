@@ -60,7 +60,8 @@ resource "proxmox_virtual_environment_container" "container" {
   }
 
   features {
-    nesting = true
+    nesting = var.nesting
+    keyctl  = var.keyctl
   }
 
   unprivileged = var.unprivileged

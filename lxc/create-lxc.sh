@@ -4,6 +4,8 @@ set -e
 
 # Default values
 UNPRIVILEGED=true
+NESTING=true
+KEYCTL=true
 NODE="erebor"
 CORES=2
 MEMORY=2048
@@ -29,6 +31,8 @@ Optional:
     --template TEMPLATE         Template name (default: ubuntu-26.04-standard_26.04-1_amd64.tar.zst)
     --template-volume VOLUME   Template storage volume (default: local)
     --privileged               Create privileged container (default: unprivileged)
+    --no-nesting               Disable nesting (default: enabled)
+    --no-keyctl                Disable keyctl (default: enabled)
     --node NODE                Proxmox node (default: erebor)
     --cores CORES              CPU cores (default: 2)
     --memory MEMORY            RAM in MB (default: 2048)
@@ -71,6 +75,14 @@ while [[ $# -gt 0 ]]; do
             ;;
         --privileged)
             UNPRIVILEGED=false
+            shift
+            ;;
+        --no-nesting)
+            NESTING=false
+            shift
+            ;;
+        --no-keyctl)
+            KEYCTL=false
             shift
             ;;
         --node)
@@ -145,6 +157,8 @@ disk_size    = "$DISK"
 cores        = $CORES
 memory       = $MEMORY
 unprivileged = $UNPRIVILEGED
+nesting      = $NESTING
+keyctl       = $KEYCTL
 node         = "$NODE"
 password     = "$PASSWORD"
 ssh_public_keys = <<-EOT
@@ -160,6 +174,8 @@ echo "  Disk: $DISK"
 echo "  Cores: $CORES"
 echo "  Memory: $MEMORY MB"
 echo "  Unprivileged: $UNPRIVILEGED"
+echo "  Nesting: $NESTING"
+echo "  Keyctl: $KEYCTL"
 echo "  Node: $NODE"
 echo "  SSH Key: $SSH_PUBLIC_KEY_PATH"
 echo "  State File: $STATE_FILE"
