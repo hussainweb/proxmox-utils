@@ -44,6 +44,7 @@ packages:
   - vim
   - wget
   - xh
+  - gnupg
 
 runcmd:
   - [ chsh, -s, /usr/bin/fish, hw ]
@@ -51,5 +52,5 @@ runcmd:
   - su - hw -c 'NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"'
   # Setup Homebrew for Fish
   - su - hw -c 'mkdir -p ~/.config/fish && echo "eval (/home/linuxbrew/.linuxbrew/bin/brew shellenv)" >> ~/.config/fish/config.fish'
-  # Install chezmoi and apply dotfiles
-  - su - hw -c 'eval (/home/linuxbrew/.linuxbrew/bin/brew shellenv) && brew install chezmoi && chezmoi init --apply hussainweb'
+  # Install chezmoi, 1Password CLI and initialize dotfiles
+  - su - hw -c 'eval (/home/linuxbrew/.linuxbrew/bin/brew shellenv) && brew install chezmoi 1password-cli && chezmoi init hussainweb'

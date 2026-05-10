@@ -47,8 +47,8 @@ The following YAML files are provided as base configurations:
 - **`basic-cloud-init.yaml`**:
   - Sets up user `hw`.
   - Installs common CLI tools (`fish`, `bat`, `eza`, `ripgrep`, etc.).
-  - Installs **Homebrew** and **chezmoi**.
-  - Applies dotfiles automatically via `chezmoi init --apply hussainweb`.
+  - Installs **Homebrew**, **chezmoi**, and **1Password CLI**.
+  - Initializes dotfiles via `chezmoi init hussainweb` (manual apply required after 1Password login).
 - **`docker-cloud-init.yaml`**:
   - Includes everything in `basic-cloud-init.yaml`.
   - Installs **Docker Engine** and **Docker Compose**.
