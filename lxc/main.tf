@@ -37,12 +37,13 @@ resource "proxmox_virtual_environment_container" "container" {
   }
 
   network_interface {
-    name = "eth0"
+    name   = "eth0"
+    bridge = "vmbr0"
   }
 
   operating_system {
     template_file_id = var.template
-    type             = "unmanaged"
+    type             = "ubuntu"
   }
 
   disk {
