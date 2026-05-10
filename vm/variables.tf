@@ -20,6 +20,12 @@ variable "cores" {
   default     = 2
 }
 
+variable "cpu_type" {
+  description = "CPU type (e.g., host, kvm64)"
+  type        = string
+  default     = "host"
+}
+
 variable "memory" {
   description = "Amount of RAM in MB"
   type        = number

@@ -172,6 +172,7 @@ vmid              = 100
 hostname          = "myvm"
 disk_size         = "20G"
 cores             = 2
+cpu_type          = "host"
 memory            = 2048
 node              = "erebor"
 password          = ""
@@ -207,3 +208,4 @@ terraform apply -state=states/terraform-100.tfstate
 - Ensure you're using a template with cloud-init
 - Some filesystems require manual resize inside the VM
 - Check if the disk was actually resized in Proxmox web interface
+oxmox web interface

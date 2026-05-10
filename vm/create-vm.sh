@@ -5,6 +5,7 @@ set -e
 # Default values
 NODE="erebor"
 CORES=2
+CPU_TYPE="host"
 MEMORY=2048
 DISK_SIZE="20G"
 PASSWORD=""
@@ -28,6 +29,7 @@ Optional:
     --password PASSWORD         Root password for the VM (default: blank)
     --disk DISK                Disk size (default: 20G)
     --cores CORES              CPU cores (default: 2)
+    --cpu-type TYPE            CPU type (default: host)
     --memory MEMORY            RAM in MB (default: 2048)
     --bios BIOS                BIOS type: ovmf (UEFI) or seabios (default: seabios)
     --node NODE                Proxmox node (default: erebor)
@@ -65,6 +67,10 @@ while [[ $# -gt 0 ]]; do
             ;;
         --cores)
             CORES="$2"
+            shift 2
+            ;;
+        --cpu-type)
+            CPU_TYPE="$2"
             shift 2
             ;;
         --memory)
@@ -147,6 +153,7 @@ vmid               = $VMID
 hostname           = "$HOSTNAME"
 disk_size          = "$DISK_SIZE"
 cores              = $CORES
+cpu_type           = "$CPU_TYPE"
 memory             = $MEMORY
 node               = "$NODE"
 password           = "$PASSWORD"
@@ -163,6 +170,7 @@ echo "  VMID: $VMID"
 echo "  Hostname: $HOSTNAME"
 echo "  Disk: $DISK_SIZE"
 echo "  Cores: $CORES"
+echo "  CPU Type: $CPU_TYPE"
 echo "  Memory: $MEMORY MB"
 echo "  BIOS: $BIOS"
 echo "  Node: $NODE"
