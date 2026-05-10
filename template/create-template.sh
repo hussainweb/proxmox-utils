@@ -116,7 +116,7 @@ if $SSH "test -f $IMAGE_FILE"; then
     echo "Image $IMAGE_FILE already exists, skipping download."
 else
     echo "Downloading Ubuntu cloud image..."
-    $SSH "wget -q --show-progress $IMAGE_URL || wget $IMAGE_URL"
+    $SSH "wget -q $IMAGE_URL || wget $IMAGE_URL"
 fi
 
 echo ""
