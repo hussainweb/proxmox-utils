@@ -33,6 +33,13 @@ if [[ -z "$VMID" ]]; then
     usage
 fi
 
+# Validate required Proxmox environment variables
+if [[ -z "$PROXMOX_VE_ENDPOINT" || -z "$PROXMOX_VE_API_TOKEN" ]]; then
+    echo "Error: Required Proxmox environment variables are not set."
+    echo "Please set PROXMOX_VE_ENDPOINT and PROXMOX_VE_API_TOKEN."
+    exit 1
+fi
+
 # Set state file path based on VMID
 STATE_DIR="./states"
 STATE_FILE="$STATE_DIR/terraform-$VMID.tfstate"

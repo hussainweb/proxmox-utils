@@ -105,6 +105,13 @@ if [[ -z "$DISK" || -z "$HOSTNAME" || -z "$VMID" ]]; then
     usage
 fi
 
+# Validate required Proxmox environment variables
+if [[ -z "$PROXMOX_VE_ENDPOINT" || -z "$PROXMOX_VE_API_TOKEN" ]]; then
+    echo "Error: Required Proxmox environment variables are not set."
+    echo "Please set PROXMOX_VE_ENDPOINT and PROXMOX_VE_API_TOKEN."
+    exit 1
+fi
+
 # Check if SSH public key exists
 if [[ ! -f "$SSH_PUBLIC_KEY_PATH" ]]; then
     echo "Error: SSH public key not found at $SSH_PUBLIC_KEY_PATH"

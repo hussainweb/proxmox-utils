@@ -107,6 +107,13 @@ if [[ -z "$HOSTNAME" || -z "$VMID" ]]; then
     usage
 fi
 
+# Validate required Proxmox environment variables
+if [[ -z "$PROXMOX_VE_ENDPOINT" || -z "$PROXMOX_VE_API_TOKEN" ]]; then
+    echo "Error: Required Proxmox environment variables are not set."
+    echo "Please set PROXMOX_VE_ENDPOINT and PROXMOX_VE_API_TOKEN."
+    exit 1
+fi
+
 # Validate BIOS type
 if [[ "$BIOS" != "ovmf" && "$BIOS" != "seabios" ]]; then
     echo "Error: BIOS must be either 'ovmf' or 'seabios'"
