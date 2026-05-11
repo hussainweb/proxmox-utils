@@ -43,7 +43,9 @@ terraform init
 terraform apply
 ```
 
-To destroy:
+## Cleanup
+
+To destroy the container:
 ```bash
 terraform destroy
 ```
@@ -52,3 +54,5 @@ terraform destroy
 
 - **Storage:** Defaults to `local-lvm`. Modify `main.tf` to change.
 - **Network:** Defaults to `eth0` on `vmbr0` with DHCP.
+
+

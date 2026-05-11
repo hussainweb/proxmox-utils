@@ -4,13 +4,12 @@ A collection of utility scripts and Terraform configurations for provisioning an
 
 ## Table of Contents
 
-- [Quick Start](#quick-start)
 - [Prerequisites](#prerequisites)
 - [Components](#components)
   - [LXC Containers](./lxc/README.md)
   - [Virtual Machines](./vm/README.md)
   - [Templates & Snippets](./template/README.md)
-- [Usage Examples](#usage-examples)
+- [Usage & Examples](#usage--examples)
 
 ## Prerequisites
 
@@ -41,23 +40,59 @@ Utilities for preparing Proxmox environments.
 - **`create-template.sh`**: Build an Ubuntu 26.04 cloud-init template via SSH.
 - **`manage-snippets.sh`**: Centralized management for cloud-init snippets on Proxmox storage.
 
-## Usage Examples
+## Usage & Examples
 
-### Creating an LXC Container
+### 1. LXC Containers
+Provisioning lightweight containers.
 ```bash
 cd lxc
-./create-lxc.sh --vmid 101 --hostname my-lxc --template local:vztmpl/ubuntu-26.04-standard_26.04-1_amd64.tar.zst
+
+# Minimal deployment
+./create-lxc.sh --vmid 101 --hostname my-lxc --disk 20G
+
+# Advanced: Privileged with custom resources
+./create-lxc.sh --vmid 102 --hostname prod-server --disk 50G --cores 4 --memory 4096 --privileged
 ```
 
-### Creating a Virtual Machine
+### 2. Virtual Machines
+Provisioning full VMs with cloud-init.
 ```bash
 cd vm
-./create-vm.sh --vmid 102 --hostname my-vm --clone-from 8000
+
+# Clone from existing template
+./create-vm.sh --vmid 201 --hostname my-vm --clone-from 8000 --disk 30G
 ```
 
-### Destroying Resources
+### 3. Templates & Snippets
+Building base images and managing cloud-init configs.
+```bash
+cd template
+
+# Create an Ubuntu 26.04 template via SSH
+./create-template.sh --ssh-host root@pve --vm-id 8000
+
+# Manage cloud-init snippets
+./manage-snippets.sh upload --ssh-host root@pve --file docker-cloud-init.yaml
+```
+
+### 4. Manual Template Creation (Optional)
+If you prefer to build a template manually on the Proxmox host:
+```bash
+# Download & Create
+wget https://cloud-images.ubuntu.com/releases/resolute/release/ubuntu-26.04-server-cloudimg-amd64.img
+qm create 9000 --name ubuntu-template --memory 2048 --cores 2 --net0 virtio,bridge=vmbr0
+qm importdisk 9000 ubuntu-26.04-server-cloudimg-amd64.img local-lvm
+
+# Configure & Convert
+qm set 9000 --scsihw virtio-scsi-pci --scsi0 local-lvm:vm-9000-disk-0
+qm set 9000 --ide2 local-lvm:cloudinit
+qm set 9000 --boot c --bootdisk scsi0 --agent enabled=1
+qm template 9000
+```
+
+### 5. Cleanup
 - **LXC:** `cd lxc && terraform destroy`
-- **VM:** `cd vm && ./destroy-vm.sh --vmid 102`
+- **VM:** `cd vm && ./destroy-vm.sh --vmid 201`
 
 ---
 For detailed instructions on each component, please refer to the respective subdirectories.
