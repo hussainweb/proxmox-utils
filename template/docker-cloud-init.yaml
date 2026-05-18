@@ -1,7 +1,5 @@
 #cloud-config
-hostname: ubuntu
 manage_etc_hosts: true
-fqdn: ubuntu
 user: hw
 password: $5$nMxnFZW2$enzzcGfpai4VIvBiMhas9yzefalm9LD9ozJC9FprEJD
 ssh_authorized_keys:
