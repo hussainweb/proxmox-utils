@@ -1,0 +1,753 @@
+Update the @vm/create-vm.sh script to give instructions in the end to use my chezmoi dotfiles. It should be quick to read and informative. See @~/.local/share/chezmoi.
+
+I want it to remind of the order of steps I need to do. Typically, I should SSH, run chezmoi init, add 1Password accounts (if relevant), run chezmoi apply, etc. Fix the order to what it should really be for a smooth chezmoi setup.
+--- Content from referenced files ---
+Content from @vm/create-vm.sh:
+#!/usr/bin/env bash
+
+set -e
+
+# Default values
+NODE="erebor"
+CORES=2
+CPU_TYPE="host"
+MEMORY=2048
+DISK_SIZE="20G"
+PASSWORD=""
+SSH_PUBLIC_KEY_PATH="$HOME/.ssh/id_ed25519.pub"
+BIOS="seabios"
+STORAGE="local-lvm"
+CLONE_TEMPLATE_ID=0
+
+# Function to display usage
+usage() {
+    cat << EOF
+Usage: $0 [OPTIONS]
+
+Create a new Proxmox VM using Terraform with cloud-init support.
+
+Required Options:
+    --hostname HOSTNAME         Hostname for the VM
+    --vmid VMID                VMID for the VM
+
+Optional:
+    --password PASSWORD         Root password for the VM (default: blank)
+    --disk DISK                Disk size (default: 20G)
+    --cores CORES              CPU cores (default: 2)
+    --cpu-type TYPE            CPU type (default: host)
+    --memory MEMORY            RAM in MB (default: 2048)
+    --bios BIOS                BIOS type: ovmf (UEFI) or seabios (default: seabios)
+    --node NODE                Proxmox node (default: erebor)
+    --storage STORAGE          Storage for VM disks (default: local-lvm)
+    --clone-from TEMPLATE_ID   Clone from existing template ID (optional)
+    --ssh-key PATH             Path to SSH public key (default: ~/.ssh/id_ed25519.pub)
+    -h, --help                 Show this help message
+
+Example:
+    $0 --hostname myvm --vmid 100
+    $0 --hostname myvm --vmid 100 --clone-from 9000 --disk 30G --cores 4
+
+EOF
+    exit 1
+}
+
+# Parse arguments
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --hostname)
+            HOSTNAME="$2"
+            shift 2
+            ;;
+        --vmid)
+            VMID="$2"
+            shift 2
+            ;;
+        --password)
+            PASSWORD="$2"
+            shift 2
+            ;;
+        --disk)
+            DISK_SIZE="$2"
+            shift 2
+            ;;
+        --cores)
+            CORES="$2"
+            shift 2
+            ;;
+        --cpu-type)
+            CPU_TYPE="$2"
+            shift 2
+            ;;
+        --memory)
+            MEMORY="$2"
+            shift 2
+            ;;
+        --bios)
+            BIOS="$2"
+            shift 2
+            ;;
+        --node)
+            NODE="$2"
+            shift 2
+            ;;
+        --storage)
+            STORAGE="$2"
+            shift 2
+            ;;
+        --clone-from)
+            CLONE_TEMPLATE_ID="$2"
+            shift 2
+            ;;
+        --ssh-key)
+            SSH_PUBLIC_KEY_PATH="$2"
+            shift 2
+            ;;
+        -h|--help)
+            usage
+            ;;
+        *)
+            echo "Unknown option: $1"
+            usage
+            ;;
+    esac
+done
+
+# Validate required parameters
+if [[ -z "$HOSTNAME" || -z "$VMID" ]]; then
+    echo "Error: Missing required parameters"
+    usage
+fi
+
+# Validate required Proxmox environment variables
+if [[ -z "$PROXMOX_VE_ENDPOINT" || -z "$PROXMOX_VE_API_TOKEN" ]]; then
+    echo "Error: Required Proxmox environment variables are not set."
+    echo "Please set PROXMOX_VE_ENDPOINT and PROXMOX_VE_API_TOKEN."
+    exit 1
+fi
+
+# Validate BIOS type
+if [[ "$BIOS" != "ovmf" && "$BIOS" != "seabios" ]]; then
+    echo "Error: BIOS must be either 'ovmf' or 'seabios'"
+    exit 1
+fi
+
+# Check if SSH public key exists
+if [[ ! -f "$SSH_PUBLIC_KEY_PATH" ]]; then
+    echo "Error: SSH public key not found at $SSH_PUBLIC_KEY_PATH"
+    exit 1
+fi
+
+# Read SSH public key
+SSH_PUBLIC_KEY=$(cat "$SSH_PUBLIC_KEY_PATH")
+
+# Create state directory if it doesn't exist
+STATE_DIR="./states"
+mkdir -p "$STATE_DIR"
+
+# Set state file path based on VMID
+STATE_FILE="$STATE_DIR/terraform-$VMID.tfstate"
+
+# Create backend configuration
+cat > backend.tfbackend << EOF
+path = "$STATE_FILE"
+EOF
+
+# Create terraform.tfvars
+cat > terraform.tfvars << EOF
+vmid               = $VMID
+hostname           = "$HOSTNAME"
+disk_size          = "$DISK_SIZE"
+cores              = $CORES
+cpu_type           = "$CPU_TYPE"
+memory             = $MEMORY
+node               = "$NODE"
+password           = "$PASSWORD"
+bios               = "$BIOS"
+storage            = "$STORAGE"
+clone_template_id  = $CLONE_TEMPLATE_ID
+ssh_public_keys    = <<-EOT
+$SSH_PUBLIC_KEY
+EOT
+EOF
+
+echo "Created terraform.tfvars with the following configuration:"
+echo "  VMID: $VMID"
+echo "  Hostname: $HOSTNAME"
+echo "  Disk: $DISK_SIZE"
+echo "  Cores: $CORES"
+echo "  CPU Type: $CPU_TYPE"
+echo "  Memory: $MEMORY MB"
+echo "  BIOS: $BIOS"
+echo "  Node: $NODE"
+echo "  Storage: $STORAGE"
+if [[ "$CLONE_TEMPLATE_ID" != "0" ]]; then
+    echo "  Clone from template: $CLONE_TEMPLATE_ID"
+fi
+echo "  SSH Key: $SSH_PUBLIC_KEY_PATH"
+echo "  State File: $STATE_FILE"
+echo ""
+
+# Reinitialize terraform with new backend
+echo "Initializing Terraform..."
+terraform init -reconfigure -backend-config=backend.tfbackend
+echo ""
+
+# Apply terraform configuration
+echo "Creating VM..."
+terraform apply -auto-approve
+
+echo ""
+echo "VM created successfully!"
+echo "State file saved to: $STATE_FILE"
+--- End of content ---
+
+---
+
+I have not configured my network to resolve the hostname. So the first step would be to go to Proxmox UI and find the IP address.
+
+---
+
+chezmoi is installed if they pick the right template. Let's assume that for the purposes of the instructions. The cloud-init also runs the chezmoi init (without apply)
+
+---
+
+Sorry, the cloud-init runs the command to clone my dotfiles repo. But chezmoi init still needs to run. Look at the cloud-init templates I have in @template/** directory.
+--- Content from referenced files ---
+Content from @template/README.md:
+# Proxmox Templates & Snippets
+
+This directory contains utilities for preparing and managing Proxmox VM templates and cloud-init snippets.
+
+For general prerequisites and setup, please refer to the [root README](../README.md).
+
+## Utilities
+
+### `create-template.sh`
+
+Automates the creation of an Ubuntu 26.04 cloud-init VM template. It downloads the official cloud image, imports it into Proxmox via SSH, and configures it with a custom cloud-init snippet.
+
+#### Usage
+```bash
+./create-template.sh --ssh-host root@proxmox [OPTIONS]
+```
+
+**Options:**
+- `--ssh-host HOST`: **Required**. SSH host for Proxmox.
+- `--vm-id ID`: VM ID for the template (default: `8000`).
+- `--storage STORAGE`: Proxmox storage name (default: `local-lvm`).
+- `--ssh-key FILE`: Public key to inject into the template (default: `~/.ssh/id_ed25519.pub`).
+- `--snippet LABEL|PATH`: Snippet label (`basic`, `docker`) or full path (default: `docker`).
+
+### `manage-snippets.sh`
+
+Manages cloud-init snippets stored on Proxmox. Snippets are useful for custom configurations that go beyond the basic Proxmox cloud-init UI.
+
+#### Commands
+- **list**: List snippets on Proxmox.
+- **upload**: Upload a local YAML as a snippet.
+- **download**: Download a snippet for local editing.
+- **delete**: Remove a snippet from Proxmox.
+
+#### Usage Examples
+```bash
+# List available snippets
+./manage-snippets.sh list --ssh-host root@pve
+
+# Upload a custom cloud-init config
+./manage-snippets.sh upload --ssh-host root@pve --file docker-cloud-init.yaml
+
+# Run template script with a custom snippet path
+./create-template.sh --ssh-host root@pve --snippet local:snippets/custom-init.yaml
+```
+
+## Cloud-init Snippets
+
+The following YAML files are provided as base configurations:
+
+- **`basic-cloud-init.yaml`**:
+  - Sets up user `hw`.
+  - Installs common CLI tools (`fish`, `bat`, `eza`, `ripgrep`, etc.).
+  - Installs **Homebrew**, **chezmoi**, and **1Password CLI**.
+  - Initializes dotfiles via `chezmoi init hussainweb` (manual apply required after 1Password login).
+- **`docker-cloud-init.yaml`**:
+  - Includes everything in `basic-cloud-init.yaml`.
+  - Installs **Docker Engine** and **Docker Compose**.
+  - Adds the user to the `docker` group.
+
+## Workflow: Creating a Template
+
+1.  **Upload Snippet**: Use `manage-snippets.sh` to upload `docker-cloud-init.yaml` to your Proxmox host.
+2.  **Run Template Script**: Run `./create-template.sh --ssh-host root@pve`.
+3.  **Convert**: The script will prompt to convert the created VM into a template.
+
+Once the template is ready, you can use the [vm/ utilities](../vm/) to clone it into new VMs.
+Content from @template/basic-cloud-init.yaml:
+#cloud-config
+manage_etc_hosts: true
+user: hw
+password: $5$nMxnFZW2$REDACTED
+ssh_authorized_keys:
+  - ssh-ed25519 REDACTED/3mn9ypMiCyW5B
+  - ssh-rsa REDACTED/REDACTED/REDACTED/REDACTED/PsrK7/REDACTED
+chpasswd:
+  expire: False
+users:
+  - name: hw
+    shell: /bin/bash
+    sudo: ['ALL=(ALL) NOPASSWD:ALL']
+    ssh_import_id:
+      - gh:hussainweb
+
+package_update: true
+package_upgrade: true
+
+packages:
+  - qemu-guest-agent
+  - sudo
+  # Homebrew dependencies
+  - build-essential
+  - procps
+  - file
+  # CLI tools
+  - fish
+  - bat
+  - eza
+  - eza-bash-completion
+  - ripgrep
+  - bottom
+  - curl
+  - httpie
+  - git
+  - git-delta
+  - htop
+  - btop
+  - jq
+  - unzip
+  - vim
+  - wget
+  - xh
+  - gnupg
+
+runcmd:
+  - [ chsh, -s, /usr/bin/fish, hw ]
+  # Install Homebrew
+  - su - hw -c 'NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"'
+  # Setup Homebrew for Fish
+  - su - hw -c 'mkdir -p ~/.config/fish && echo "eval (/home/linuxbrew/.linuxbrew/bin/brew shellenv)" >> ~/.config/fish/config.fish'
+  # Install chezmoi, 1Password CLI and initialize dotfiles
+  - su - hw -c 'eval (/home/linuxbrew/.linuxbrew/bin/brew shellenv) && brew install chezmoi 1password-cli && chezmoi init hussainweb'
+Content from @template/create-template.sh:
+#!/bin/bash
+
+# Proxmox VM Template Creation Script
+# Usage: ./create-template.sh --ssh-host HOST [OPTIONS]
+#
+# Required:
+#   --ssh-host HOST          SSH host to connect to Proxmox
+#
+# Optional:
+#   --vm-id ID               VM ID (default: 8000)
+#   --storage STORAGE        Storage name (default: local-lvm)
+#   --ssh-key FILE           SSH public key file (default: ~/.ssh/id_ed25519.pub)
+#   -h, --help               Show this help message
+
+set -e
+
+# Default values
+VM_ID="8000"
+STORAGE="local-lvm"
+SSH_HOST=""
+SSH_KEY_FILE="$HOME/.ssh/id_ed25519.pub"
+SNIPPET_LABEL="docker"
+
+# Parse command line arguments
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --vm-id)
+            VM_ID="$2"
+            shift 2
+            ;;
+        --storage)
+            STORAGE="$2"
+            shift 2
+            ;;
+        --ssh-host)
+            SSH_HOST="$2"
+            shift 2
+            ;;
+        --ssh-key)
+            SSH_KEY_FILE="$2"
+            shift 2
+            ;;
+        --snippet)
+            SNIPPET_LABEL="$2"
+            shift 2
+            ;;
+        -h|--help)
+            echo "Usage: $0 --ssh-host HOST [OPTIONS]"
+            echo ""
+            echo "Required:"
+            echo "  --ssh-host HOST          SSH host to connect to Proxmox"
+            echo ""
+            echo "Optional:"
+            echo "  --vm-id ID               VM ID (default: 8000)"
+            echo "  --storage STORAGE        Storage name (default: local-lvm)"
+            echo "  --ssh-key FILE           SSH public key file (default: ~/.ssh/id_ed25519.pub)"
+            echo "  --snippet LABEL|PATH     Snippet label (basic, docker) or full path (default: docker)"
+            echo "  -h, --help               Show this help message"
+            exit 0
+            ;;
+        *)
+            echo "Error: Unknown option: $1"
+            echo "Use --help for usage information"
+            exit 1
+            ;;
+    esac
+done
+
+# Resolve cloud-init snippet path
+case "$SNIPPET_LABEL" in
+    basic)
+        CICUSTOM_SNIPPET="nfslorien:snippets/basic-cloud-init.yaml"
+        ;;
+    docker)
+        CICUSTOM_SNIPPET="nfslorien:snippets/docker-cloud-init.yaml"
+        ;;
+    *)
+        CICUSTOM_SNIPPET="$SNIPPET_LABEL"
+        ;;
+esac
+
+# Ubuntu cloud image
+IMAGE_URL="https://cloud-images.ubuntu.com/releases/resolute/release/ubuntu-26.04-server-cloudimg-amd64.img"
+IMAGE_FILE="ubuntu-26.04-server-cloudimg-amd64.img"
+
+# Validate SSH_HOST is provided
+if [ -z "$SSH_HOST" ]; then
+    echo "Error: --ssh-host is required"
+    echo "Use --help for usage information"
+    exit 1
+fi
+
+# Check if SSH key file exists
+if [ ! -f "$SSH_KEY_FILE" ]; then
+    echo "Error: SSH key file not found: $SSH_KEY_FILE"
+    echo "Please provide a valid SSH public key file path"
+    exit 1
+fi
+
+# Read SSH public key
+SSH_PUBLIC_KEY=$(cat "$SSH_KEY_FILE")
+
+echo "=== Proxmox VM Template Creation ==="
+echo "VM ID: $VM_ID"
+echo "Storage: $STORAGE"
+echo "SSH Host: $SSH_HOST"
+echo "SSH Key: $SSH_KEY_FILE"
+echo "Cloud-init snippet: $CICUSTOM_SNIPPET"
+echo ""
+
+# SSH command prefix
+SSH="ssh $SSH_HOST"
+
+echo "Step 1: Checking/Downloading Ubuntu cloud image..."
+if $SSH "test -f $IMAGE_FILE"; then
+    echo "Image $IMAGE_FILE already exists, skipping download."
+else
+    echo "Downloading Ubuntu cloud image..."
+    $SSH "wget -q $IMAGE_URL || wget $IMAGE_URL"
+fi
+
+echo ""
+echo "Step 2: Creating VM..."
+$SSH "qm create $VM_ID --memory 4096 --core 4 --cpu host --agent 1 --name ubuntu-cloud --net0 virtio,bridge=vmbr0"
+
+echo ""
+echo "Step 3: Importing disk..."
+$SSH "qm disk import $VM_ID $IMAGE_FILE $STORAGE"
+
+echo ""
+echo "Step 4: Configuring VM..."
+$SSH "qm set $VM_ID --scsihw virtio-scsi-pci --scsi0 $STORAGE:vm-$VM_ID-disk-0"
+$SSH "qm set $VM_ID --ide2 $STORAGE:cloudinit"
+$SSH "qm set $VM_ID --boot c --bootdisk scsi0"
+$SSH "qm set $VM_ID --serial0 socket --vga serial0"
+
+echo ""
+echo "Step 5: Resizing disk..."
+$SSH "qm resize $VM_ID scsi0 +16.5G"
+
+echo ""
+echo "Step 6: Setting cloud-init options..."
+# Set DHCP for IPv4 and IPv6
+$SSH "qm set $VM_ID --ipconfig0 ip=dhcp,ip6=dhcp"
+# Set SSH key
+$SSH "qm set $VM_ID --sshkeys <(echo '$SSH_PUBLIC_KEY')" || $SSH "qm set $VM_ID --sshkey \"$SSH_PUBLIC_KEY\""
+
+echo ""
+echo "Step 7: Setting cloud-init custom config..."
+$SSH "qm set $VM_ID --cicustom \"user=$CICUSTOM_SNIPPET\""
+
+echo ""
+echo "=== VM $VM_ID created successfully! ==="
+echo ""
+echo "Cloud-init configured with:"
+echo "  - DHCP enabled for IPv4 and IPv6"
+echo "  - SSH key from: $SSH_KEY_FILE"
+echo ""
+echo "IMPORTANT: Before converting to template, verify:"
+echo "  - Cloud-init config at /mnt/pve/nfslorien/snippets/docker-cloud-init.yaml"
+echo "  - Set username/password if needed via: ssh $SSH_HOST 'qm set $VM_ID --ciuser <user> --cipassword <pass>'"
+echo ""
+
+read -p "Do you want to convert VM $VM_ID to a template now? (y/N): " -n 1 -r
+echo
+if [[ $REPLY =~ ^[Yy]$ ]]; then
+    echo "Converting VM $VM_ID to template..."
+    $SSH "qm template $VM_ID"
+    echo "✓ VM $VM_ID converted to template successfully!"
+else
+    echo "Skipping template conversion. You can convert it later with:"
+    echo "  ssh $SSH_HOST 'qm template $VM_ID'"
+fi
+
+echo ""
+echo "Done!"
+Content from @template/docker-cloud-init.yaml:
+#cloud-config
+manage_etc_hosts: true
+user: hw
+password: $5$nMxnFZW2$REDACTED
+ssh_authorized_keys:
+  - ssh-ed25519 REDACTED/3mn9ypMiCyW5B
+  - ssh-rsa REDACTED/REDACTED/REDACTED/REDACTED/PsrK7/REDACTED
+chpasswd:
+  expire: False
+users:
+  - name: hw
+    shell: /bin/bash
+    sudo: ['ALL=(ALL) NOPASSWD:ALL']
+    ssh_import_id:
+      - gh:hussainweb
+
+package_update: true
+package_upgrade: true
+
+apt:
+  preserve_sources_list: true
+  sources:
+    docker.list:
+      source: deb [arch=amd64] https://download.docker.com/linux/ubuntu $RELEASE stable
+      keyid: 9DC858229FC7DD38854AE2D88D81803C0EBFCD88
+
+packages:
+  - qemu-guest-agent
+  - sudo
+  # Homebrew dependencies
+  - build-essential
+  - procps
+  - file
+  # Docker
+  - docker-ce
+  - docker-ce-cli
+  - containerd.io
+  - docker-buildx-plugin
+  - docker-compose-plugin
+  # CLI tools
+  - fish
+  - bat
+  - eza
+  - eza-bash-completion
+  - ripgrep
+  - bottom
+  - curl
+  - httpie
+  - git
+  - git-delta
+  - htop
+  - btop
+  - jq
+  - unzip
+  - vim
+  - wget
+  - xh
+  - gnupg
+
+runcmd:
+  - [ chsh, -s, /usr/bin/fish, hw ]
+  - [ usermod, -aG, docker, hw ]
+  # Install Homebrew
+  - su - hw -c 'NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"'
+  # Setup Homebrew for Fish
+  - su - hw -c 'mkdir -p ~/.config/fish && echo "eval (/home/linuxbrew/.linuxbrew/bin/brew shellenv)" >> ~/.config/fish/config.fish'
+  # Install chezmoi, 1Password CLI and initialize dotfiles
+  - su - hw -c 'eval (/home/linuxbrew/.linuxbrew/bin/brew shellenv) && brew install chezmoi 1password-cli && chezmoi init hussainweb'
+Content from @template/manage-snippets.sh:
+#!/bin/bash
+
+# Proxmox Snippet Management Script
+# Usage: ./manage-snippets.sh [COMMAND] [OPTIONS]
+#
+# Commands:
+#   list                     List snippets on Proxmox
+#   upload                   Upload a local file as a snippet
+#   download                 Download a snippet from Proxmox
+#   delete                   Delete a snippet from Proxmox
+#
+# Global Options:
+#   --ssh-host HOST          SSH host to connect to Proxmox (Required)
+#   --storage STORAGE        Proxmox storage name (default: nfslorien)
+#
+# Upload/Download/Delete Options:
+#   --file FILE              File path (local for upload, remote filename for others)
+#   --local-path PATH        Local destination path for download (optional)
+
+set -e
+
+# Default values
+STORAGE="nfslorien"
+SSH_HOST=""
+COMMAND=""
+FILE=""
+LOCAL_PATH=""
+
+# Function to display usage
+usage() {
+    cat << EOF
+Usage: $0 [COMMAND] --ssh-host HOST [OPTIONS]
+
+Commands:
+    list                        List all snippets in the specified storage
+    upload --file PATH          Upload a local file to Proxmox snippets
+    download --file NAME        Download a snippet from Proxmox to local
+    delete --file NAME          Delete a snippet from Proxmox
+
+Global Options:
+    --ssh-host HOST             SSH host to connect to Proxmox
+    --storage STORAGE           Proxmox storage name (default: nfslorien)
+
+Options:
+    --file FILE                 Filename (local path for upload, remote name for others)
+    --local-path PATH           Destination path for download (default: current dir)
+    -h, --help                  Show this help message
+
+Examples:
+    $0 list --ssh-host root@pve
+    $0 upload --ssh-host root@pve --file my-config.yaml
+    $0 download --ssh-host root@pve --file my-config.yaml --local-path ./backups/
+    $0 delete --ssh-host root@pve --file old-config.yaml
+EOF
+    exit 1
+}
+
+# Parse command (must be first)
+if [[ $# -gt 0 && ! $1 =~ ^-- ]]; then
+    COMMAND="$1"
+    shift
+fi
+
+# Parse arguments
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --ssh-host) SSH_HOST="$2"; shift 2 ;;
+        --storage) STORAGE="$2"; shift 2 ;;
+        --file) FILE="$2"; shift 2 ;;
+        --local-path) LOCAL_PATH="$2"; shift 2 ;;
+        -h|--help) usage ;;
+        *) echo "Error: Unknown option: $1"; usage ;;
+    esac
+done
+
+# Validate required arguments
+if [ -z "$COMMAND" ]; then echo "Error: Command is required"; usage; fi
+if [ -z "$SSH_HOST" ]; then echo "Error: --ssh-host is required"; usage; fi
+
+# SSH command prefix
+SSH="ssh $SSH_HOST"
+
+# Step 1: Identify storage path
+get_storage_path() {
+    # Try using pvesh (API tool)
+    # Use grep/sed to extract path from JSON-like output without jq
+    local path=$($SSH "pvesh get /storage/$STORAGE --output-format json 2>/dev/null | grep -o '\"path\":\"[^\"]*\"' | sed 's/\"path\":\"//;s/\"//'")
+    
+    # Fallback to pvesm status - much easier to parse in text mode
+    if [ -z "$path" ]; then
+        # pvesm status -storage <name> returns a header and a data line
+        # The path is usually the last column. We filter for absolute paths starting with /
+        path=$($SSH "pvesm status -storage $STORAGE | awk 'NR>1 {print \$NF}' | grep '^/' || true")
+    fi
+
+    # Final fallback: most common Proxmox mount point pattern
+    if [ -z "$path" ] || [ "$path" == "null" ]; then
+        echo "/mnt/pve/$STORAGE"
+    else
+        echo "$path"
+    fi
+}
+
+STORAGE_PATH=$(get_storage_path)
+SNIPPETS_DIR="$STORAGE_PATH/snippets"
+
+case $COMMAND in
+    list)
+        echo "=== Snippets in $STORAGE ($SNIPPETS_DIR) ==="
+        $SSH "ls -1 $SNIPPETS_DIR 2>/dev/null || echo '(No snippets found or directory does not exist)'"
+        ;;
+
+    upload)
+        if [ -z "$FILE" ]; then echo "Error: --file is required for upload"; exit 1; fi
+        if [ ! -f "$FILE" ]; then echo "Error: Local file not found: $FILE"; exit 1; fi
+        
+        REMOTE_NAME=$(basename "$FILE")
+        echo "Uploading $FILE to $SNIPPETS_DIR/$REMOTE_NAME..."
+        $SSH "mkdir -p $SNIPPETS_DIR"
+        scp "$FILE" "$SSH_HOST:$SNIPPETS_DIR/$REMOTE_NAME"
+        echo "Done!"
+        ;;
+
+    download)
+        if [ -z "$FILE" ]; then echo "Error: --file (remote name) is required for download"; exit 1; fi
+        
+        TARGET_PATH=${LOCAL_PATH:-"."}
+        if [ -d "$TARGET_PATH" ]; then
+            TARGET_FILE="$TARGET_PATH/$(basename "$FILE")"
+        else
+            TARGET_FILE="$TARGET_PATH"
+        fi
+
+        echo "Downloading $STORAGE:$FILE to $TARGET_FILE..."
+        scp "$SSH_HOST:$SNIPPETS_DIR/$FILE" "$TARGET_FILE"
+        echo "Done!"
+        ;;
+
+    delete)
+        if [ -z "$FILE" ]; then echo "Error: --file (remote name) is required for delete"; exit 1; fi
+        
+        read -p "Are you sure you want to delete snippet '$FILE' from $STORAGE? (y/N): " -n 1 -r
+        echo
+        if [[ $REPLY =~ ^[Yy]$ ]]; then
+            $SSH "rm $SNIPPETS_DIR/$FILE"
+            echo "Deleted snippet $FILE."
+        else
+            echo "Delete cancelled."
+        fi
+        ;;
+
+    *)
+        echo "Error: Unknown command: $COMMAND"
+        usage
+        ;;
+esac
+--- End of content ---
+
+---
+
+I also need to run commands to add accounts to 1Password. Something like this:
+
+op account add --address my.1password.com --email hussainweb@gmail.com --shorthand my.1password.com
+op account add --address axelerant.1password.com --email hussain@axelerant.com --shorthand axelerant.1password.com
+
+---
+
+1Password signin is wrong. It has to be eval (op signin) for fish and eval $(op signin) for zsh.
