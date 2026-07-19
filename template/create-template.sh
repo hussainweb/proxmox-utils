@@ -147,7 +147,7 @@ $SSH "qm set $VM_ID --sshkeys <(echo '$SSH_PUBLIC_KEY')" || $SSH "qm set $VM_ID 
 
 echo ""
 echo "Step 7: Setting cloud-init custom config..."
-$SSH "qm set $VM_ID --cicustom \"user=$CICUSTOM_SNIPPET\""
+$SSH "qm set $VM_ID --cicustom \"vendor=$CICUSTOM_SNIPPET\""
 
 echo ""
 echo "=== VM $VM_ID created successfully! ==="

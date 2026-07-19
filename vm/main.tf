@@ -75,7 +75,7 @@ resource "proxmox_virtual_environment_vm" "vm" {
       keys     = [var.ssh_public_keys]
     }
 
-    user_data_file_id = "nfslorien:snippets/docker-cloud-init.yaml"
+    vendor_data_file_id = "nfslorien:snippets/docker-cloud-init.yaml"
   }
 
   vga {
