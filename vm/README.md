@@ -34,18 +34,30 @@ The script generates a `terraform.tfvars` file and manages state files per VMID 
 - `--node NODE` - Proxmox node (default: `erebor`).
 - `--storage STORAGE` - Storage for disks (default: `local-lvm`).
 - `--ssh-key PATH` - Path to public key (default: `~/.ssh/id_ed25519.pub`).
+- `--state-dir DIR` - Custom directory for state files (default: `./states` or `$PROXMOX_STATE_DIR`).
 
 ### `destroy-vm.sh`
 
 Destroys a VM and removes its specific state file:
 
 ```bash
-./destroy-vm.sh --vmid 101
+./destroy-vm.sh 101
+./destroy-vm.sh --state-dir /path/to/states 101
 ```
 
 ## State Management
 
-State files are stored in `states/terraform-{VMID}.tfstate`. This allows you to manage multiple VMs independently using the same Terraform configuration.
+By default, state files are stored in `states/terraform-{VMID}.tfstate`. This allows you to manage multiple VMs independently using the same Terraform configuration.
+
+### MinIO / S3 Remote State Backend
+To store state remotely in S3 or MinIO, set the following environment variables:
+```bash
+export PROXMOX_TFSTATE_ACCESS_KEY="your-access-key"
+export PROXMOX_TFSTATE_SECRET_KEY="your-secret-key"
+export PROXMOX_TFSTATE_S3_ENDPOINT="https://s3.example.com"
+export PROXMOX_TFSTATE_S3_BUCKET="my-tf-state-bucket"
+export PROXMOX_TFSTATE_S3_REGION="main" # optional, default: main
+```
 
 ## Cloud-init & Templates
 

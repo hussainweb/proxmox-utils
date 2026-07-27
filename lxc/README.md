@@ -30,24 +30,31 @@ The script generates a `terraform.tfvars` file based on your input.
 - `--memory MEMORY` - RAM in MB (default: 2048).
 - `--node NODE` - Proxmox node (default: `erebor`).
 - `--ssh-key PATH` - Path to public key (default: `~/.ssh/id_ed25519.pub`).
+- `--state-dir DIR` - Custom directory for state files (default: `./states` or `$PROXMOX_STATE_DIR`).
 - `--privileged` - Create a privileged container (default: unprivileged).
 - `--no-nesting` - Disable nesting (default: enabled).
 - `--no-keyctl` - Disable keyctl (default: enabled).
 
-## Applying with Terraform
+### `destroy-lxc.sh`
 
-After running the wrapper script, apply the configuration:
-
+Destroys an LXC container and removes its state file:
 ```bash
-terraform init
-terraform apply
+./destroy-lxc.sh 100
+./destroy-lxc.sh --state-dir /path/to/states 100
 ```
 
-## Cleanup
+## State Management
 
-To destroy the container:
+State files default to `./states/terraform-{VMID}.tfstate`.
+
+### MinIO / S3 Remote State Backend
+To store state remotely in S3 or MinIO, set the following environment variables:
 ```bash
-terraform destroy
+export PROXMOX_TFSTATE_ACCESS_KEY="your-access-key"
+export PROXMOX_TFSTATE_SECRET_KEY="your-secret-key"
+export PROXMOX_TFSTATE_S3_ENDPOINT="https://s3.example.com"
+export PROXMOX_TFSTATE_S3_BUCKET="my-tf-state-bucket"
+export PROXMOX_TFSTATE_S3_REGION="main" # optional, default: main
 ```
 
 ## Configuration Details

@@ -23,6 +23,22 @@ Before using any of these utilities, ensure you have the following:
   export PROXMOX_VE_INSECURE=true  # if using self-signed certificates
   ```
 
+### State Management & Remote S3 Backend
+
+By default, state files are managed per resource in `./states/terraform-{VMID}.tfstate`.
+
+You can customize the local state directory via `--state-dir /path/to/states` or `export PROXMOX_STATE_DIR="/path/to/states"`.
+
+#### MinIO / S3 Remote State
+To store state files in MinIO or S3, export the following environment variables:
+```bash
+export PROXMOX_TFSTATE_ACCESS_KEY="your-access-key"
+export PROXMOX_TFSTATE_SECRET_KEY="your-secret-key"
+export PROXMOX_TFSTATE_S3_ENDPOINT="https://s3.example.com"
+export PROXMOX_TFSTATE_S3_BUCKET="my-tf-state-bucket"
+export PROXMOX_TFSTATE_S3_REGION="main"  # optional, default: main
+```
+
 ## Components
 
 ### [LXC Containers](./lxc/)
