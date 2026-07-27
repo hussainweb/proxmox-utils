@@ -36,6 +36,7 @@ Optional:
     --storage STORAGE          Storage for VM disks (default: local-lvm)
     --clone-from TEMPLATE_ID   Clone from existing template ID (optional)
     --ssh-key PATH             Path to SSH public key (default: ~/.ssh/id_ed25519.pub)
+    --state-dir DIR            Custom directory for state files (default: ./states or $PROXMOX_STATE_DIR)
     -h, --help                 Show this help message
 
 Example:
@@ -97,6 +98,10 @@ while [[ $# -gt 0 ]]; do
             SSH_PUBLIC_KEY_PATH="$2"
             shift 2
             ;;
+        --state-dir)
+            STATE_DIR="$2"
+            shift 2
+            ;;
         -h|--help)
             usage
             ;;
@@ -136,7 +141,7 @@ fi
 SSH_PUBLIC_KEY=$(cat "$SSH_PUBLIC_KEY_PATH")
 
 # Create state directory if it doesn't exist
-STATE_DIR="./states"
+STATE_DIR="${STATE_DIR:-${PROXMOX_STATE_DIR:-./states}}"
 mkdir -p "$STATE_DIR"
 
 # Set state file path based on VMID

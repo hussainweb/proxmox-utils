@@ -5,27 +5,45 @@ set -e
 # Function to display usage
 usage() {
     cat << EOF
-Usage: $0 VMID
+Usage: $0 [OPTIONS] VMID
 
 Destroy a Proxmox LXC container using Terraform.
 
 Arguments:
     VMID    VMID of the container to destroy
 
+Options:
+    --state-dir DIR    Custom directory for state files (default: ./states or $PROXMOX_STATE_DIR)
+
 Example:
     $0 100
+    $0 --state-dir /path/to/states 100
 
 EOF
     exit 1
 }
 
-# Check for help flag
-if [[ "$1" == "-h" || "$1" == "--help" ]]; then
-    usage
-fi
-
-# Get VMID from first argument
-VMID="$1"
+# Parse options
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --state-dir)
+            STATE_DIR="$2"
+            shift 2
+            ;;
+        -h|--help)
+            usage
+            ;;
+        *)
+            if [[ -z "$VMID" ]]; then
+                VMID="$1"
+                shift
+            else
+                echo "Unknown argument: $1"
+                usage
+            fi
+            ;;
+    esac
+done
 
 # Validate required parameter
 if [[ -z "$VMID" ]]; then
@@ -41,7 +59,7 @@ if [[ -z "$PROXMOX_VE_ENDPOINT" || -z "$PROXMOX_VE_API_TOKEN" ]]; then
 fi
 
 # Set state file path based on VMID
-STATE_DIR="./states"
+STATE_DIR="${STATE_DIR:-${PROXMOX_STATE_DIR:-./states}}"
 STATE_FILE="$STATE_DIR/terraform-$VMID.tfstate"
 
 # Check if state file exists
