@@ -62,7 +62,7 @@ fi
 check_proxmox_env
 
 # Setup Terraform backend
-setup_backend "vms" "$VMID" "$STATE_DIR" "true"
+setup_backend "vm" "$VMID" "$STATE_DIR" "true"
 
 echo "Destroying VM $VMID using state: $STATE_INFO"
 echo ""

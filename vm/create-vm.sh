@@ -140,7 +140,7 @@ fi
 SSH_PUBLIC_KEY=$(cat "$SSH_PUBLIC_KEY_PATH")
 
 # Setup Terraform backend
-setup_backend "vms" "$VMID" "$STATE_DIR"
+setup_backend "vm" "$VMID" "$STATE_DIR"
 
 # Create terraform.tfvars
 cat > terraform.tfvars << EOF
