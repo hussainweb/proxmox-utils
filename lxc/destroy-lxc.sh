@@ -23,10 +23,17 @@ EOF
     exit 1
 }
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/../lib/utils.sh"
+
 # Parse options
 while [[ $# -gt 0 ]]; do
     case $1 in
         --state-dir)
+            if [[ -z "$2" || "$2" == -* ]]; then
+                echo "Error: --state-dir requires a non-empty directory argument"
+                usage
+            fi
             STATE_DIR="$2"
             shift 2
             ;;
@@ -52,58 +59,10 @@ if [[ -z "$VMID" ]]; then
 fi
 
 # Validate required Proxmox environment variables
-if [[ -z "$PROXMOX_VE_ENDPOINT" || -z "$PROXMOX_VE_API_TOKEN" ]]; then
-    echo "Error: Required Proxmox environment variables are not set."
-    echo "Please set PROXMOX_VE_ENDPOINT and PROXMOX_VE_API_TOKEN."
-    exit 1
-fi
+check_proxmox_env
 
-# Check for custom MinIO / S3 credentials
-S3_ACCESS_KEY="$PROXMOX_TFSTATE_ACCESS_KEY"
-S3_SECRET_KEY="$PROXMOX_TFSTATE_SECRET_KEY"
-S3_ENDPOINT="$PROXMOX_TFSTATE_S3_ENDPOINT"
-S3_BUCKET="$PROXMOX_TFSTATE_S3_BUCKET"
-S3_REGION="${PROXMOX_TFSTATE_S3_REGION:-main}"
-
-if [[ -n "$S3_ACCESS_KEY" && -n "$S3_SECRET_KEY" ]]; then
-    echo "Using MinIO/S3 state backend at $S3_ENDPOINT (bucket: $S3_BUCKET)"
-    cat > backend.tf << EOF
-terraform {
-  backend "s3" {}
-}
-EOF
-    cat > backend.tfbackend << EOF
-bucket                      = "$S3_BUCKET"
-key                         = "lxc/terraform-$VMID.tfstate"
-endpoints                   = { s3 = "$S3_ENDPOINT" }
-access_key                  = "$S3_ACCESS_KEY"
-secret_key                  = "$S3_SECRET_KEY"
-region                      = "$S3_REGION"
-skip_credentials_validation = true
-skip_metadata_api_check     = true
-skip_region_validation      = true
-skip_requesting_account_id  = true
-use_path_style              = true
-EOF
-    STATE_INFO="S3 ($S3_ENDPOINT / $S3_BUCKET / lxc/terraform-$VMID.tfstate)"
-else
-    cat > backend.tf << EOF
-terraform {
-  backend "local" {}
-}
-EOF
-    STATE_DIR="${STATE_DIR:-${PROXMOX_STATE_DIR:-./states}}"
-    STATE_FILE="$STATE_DIR/terraform-$VMID.tfstate"
-    if [[ ! -f "$STATE_FILE" ]]; then
-        echo "Error: State file not found at $STATE_FILE"
-        echo "Cannot destroy container with VMID $VMID - no state file exists."
-        exit 1
-    fi
-    cat > backend.tfbackend << EOF
-path = "$STATE_FILE"
-EOF
-    STATE_INFO="Local ($STATE_FILE)"
-fi
+# Setup Terraform backend
+setup_backend "lxc" "$VMID" "$STATE_DIR" "true"
 
 echo "Destroying container with VMID $VMID using state: $STATE_INFO"
 echo ""
@@ -116,13 +75,4 @@ terraform destroy -auto-approve
 
 echo ""
 echo "Container destroyed successfully!"
-if [[ -z "$S3_ACCESS_KEY" || -z "$S3_SECRET_KEY" ]]; then
-    echo "Removing local state file: $STATE_FILE"
-    rm -f "$STATE_FILE" "$STATE_FILE.backup"
-
-    # Check if states directory is empty and remove it
-    if [[ -d "$STATE_DIR" ]] && [[ -z "$(ls -A "$STATE_DIR")" ]]; then
-        rmdir "$STATE_DIR"
-        echo "Removed empty states directory"
-    fi
-fi
+cleanup_local_state "$VMID" "$STATE_DIR"
