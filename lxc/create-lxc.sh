@@ -141,17 +141,48 @@ SSH_PUBLIC_KEY=$(cat "$SSH_PUBLIC_KEY_PATH")
 # Construct full template path in Proxmox format
 FULL_TEMPLATE="${TEMPLATE_VOLUME}:vztmpl/${TEMPLATE}"
 
-# Create state directory if it doesn't exist
-STATE_DIR="${STATE_DIR:-${PROXMOX_STATE_DIR:-./states}}"
-mkdir -p "$STATE_DIR"
+# Check for custom MinIO / S3 credentials
+S3_ACCESS_KEY="$PROXMOX_TFSTATE_ACCESS_KEY"
+S3_SECRET_KEY="$PROXMOX_TFSTATE_SECRET_KEY"
+S3_ENDPOINT="$PROXMOX_TFSTATE_S3_ENDPOINT"
+S3_BUCKET="$PROXMOX_TFSTATE_S3_BUCKET"
+S3_REGION="${PROXMOX_TFSTATE_S3_REGION:-main}"
 
-# Set state file path based on VMID
-STATE_FILE="$STATE_DIR/terraform-$VMID.tfstate"
-
-# Create backend configuration
-cat > backend.tfbackend << EOF
+if [[ -n "$S3_ACCESS_KEY" && -n "$S3_SECRET_KEY" ]]; then
+    echo "Using MinIO/S3 state backend at $S3_ENDPOINT (bucket: $S3_BUCKET)"
+    cat > backend.tf << EOF
+terraform {
+  backend "s3" {}
+}
+EOF
+    cat > backend.tfbackend << EOF
+bucket                      = "$S3_BUCKET"
+key                         = "lxc/terraform-$VMID.tfstate"
+endpoints                   = { s3 = "$S3_ENDPOINT" }
+access_key                  = "$S3_ACCESS_KEY"
+secret_key                  = "$S3_SECRET_KEY"
+region                      = "$S3_REGION"
+skip_credentials_validation = true
+skip_metadata_api_check     = true
+skip_region_validation      = true
+skip_requesting_account_id  = true
+use_path_style              = true
+EOF
+    STATE_INFO="S3 ($S3_ENDPOINT / $S3_BUCKET / lxc/terraform-$VMID.tfstate)"
+else
+    cat > backend.tf << EOF
+terraform {
+  backend "local" {}
+}
+EOF
+    STATE_DIR="${STATE_DIR:-${PROXMOX_STATE_DIR:-./states}}"
+    mkdir -p "$STATE_DIR"
+    STATE_FILE="$STATE_DIR/terraform-$VMID.tfstate"
+    cat > backend.tfbackend << EOF
 path = "$STATE_FILE"
 EOF
+    STATE_INFO="Local ($STATE_FILE)"
+fi
 
 # Create terraform.tfvars
 cat > terraform.tfvars << EOF
@@ -183,7 +214,7 @@ echo "  Nesting: $NESTING"
 echo "  Keyctl: $KEYCTL"
 echo "  Node: $NODE"
 echo "  SSH Key: $SSH_PUBLIC_KEY_PATH"
-echo "  State File: $STATE_FILE"
+echo "  State: $STATE_INFO"
 echo ""
 
 # Reinitialize terraform with new backend
@@ -197,4 +228,4 @@ terraform apply -auto-approve
 
 echo ""
 echo "Container created successfully!"
-echo "State file saved to: $STATE_FILE"
+echo "State saved to: $STATE_INFO"

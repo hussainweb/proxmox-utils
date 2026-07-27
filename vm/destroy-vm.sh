@@ -58,23 +58,54 @@ if [[ -z "$PROXMOX_VE_ENDPOINT" || -z "$PROXMOX_VE_API_TOKEN" ]]; then
     exit 1
 fi
 
-# Set state file path based on VMID
-STATE_DIR="${STATE_DIR:-${PROXMOX_STATE_DIR:-./states}}"
-STATE_FILE="$STATE_DIR/terraform-$VMID.tfstate"
+# Check for custom MinIO / S3 credentials
+S3_ACCESS_KEY="$PROXMOX_TFSTATE_ACCESS_KEY"
+S3_SECRET_KEY="$PROXMOX_TFSTATE_SECRET_KEY"
+S3_ENDPOINT="$PROXMOX_TFSTATE_S3_ENDPOINT"
+S3_BUCKET="$PROXMOX_TFSTATE_S3_BUCKET"
+S3_REGION="${PROXMOX_TFSTATE_S3_REGION:-main}"
 
-# Check if state file exists
-if [[ ! -f "$STATE_FILE" ]]; then
-    echo "Error: State file not found at $STATE_FILE"
-    echo "Cannot destroy VM $VMID - no state file exists"
-    exit 1
-fi
-
-# Create backend configuration
-cat > backend.tfbackend << EOF
+if [[ -n "$S3_ACCESS_KEY" && -n "$S3_SECRET_KEY" ]]; then
+    echo "Using MinIO/S3 state backend at $S3_ENDPOINT (bucket: $S3_BUCKET)"
+    cat > backend.tf << EOF
+terraform {
+  backend "s3" {}
+}
+EOF
+    cat > backend.tfbackend << EOF
+bucket                      = "$S3_BUCKET"
+key                         = "vms/terraform-$VMID.tfstate"
+endpoints                   = { s3 = "$S3_ENDPOINT" }
+access_key                  = "$S3_ACCESS_KEY"
+secret_key                  = "$S3_SECRET_KEY"
+region                      = "$S3_REGION"
+skip_credentials_validation = true
+skip_metadata_api_check     = true
+skip_region_validation      = true
+skip_requesting_account_id  = true
+use_path_style              = true
+EOF
+    STATE_INFO="S3 ($S3_ENDPOINT / $S3_BUCKET / vms/terraform-$VMID.tfstate)"
+else
+    cat > backend.tf << EOF
+terraform {
+  backend "local" {}
+}
+EOF
+    STATE_DIR="${STATE_DIR:-${PROXMOX_STATE_DIR:-./states}}"
+    STATE_FILE="$STATE_DIR/terraform-$VMID.tfstate"
+    if [[ ! -f "$STATE_FILE" ]]; then
+        echo "Error: State file not found at $STATE_FILE"
+        echo "Cannot destroy VM $VMID - no state file exists"
+        exit 1
+    fi
+    cat > backend.tfbackend << EOF
 path = "$STATE_FILE"
 EOF
+    STATE_INFO="Local ($STATE_FILE)"
+fi
 
-echo "Destroying VM $VMID using state file: $STATE_FILE"
+echo "Destroying VM $VMID using state: $STATE_INFO"
 echo ""
 
 # Initialize terraform with backend
@@ -85,6 +116,8 @@ terraform destroy -auto-approve
 
 echo ""
 echo "VM $VMID destroyed successfully!"
-echo "Removing state file..."
-rm -f "$STATE_FILE"
+if [[ -z "$S3_ACCESS_KEY" || -z "$S3_SECRET_KEY" ]]; then
+    echo "Removing local state file..."
+    rm -f "$STATE_FILE"
+fi
 echo "Done!"
