@@ -36,6 +36,12 @@ setup_backend() {
     S3_REGION="${PROXMOX_TFSTATE_S3_REGION:-main}"
 
     if [[ -n "$S3_ACCESS_KEY" && -n "$S3_SECRET_KEY" ]]; then
+        if [[ -z "$S3_ENDPOINT" || -z "$S3_BUCKET" ]]; then
+            echo "Error: MinIO/S3 state backend is enabled (access key and secret key are set),"
+            echo "but required environment variables PROXMOX_TFSTATE_S3_ENDPOINT or PROXMOX_TFSTATE_S3_BUCKET are missing."
+            echo "Please set PROXMOX_TFSTATE_S3_ENDPOINT and PROXMOX_TFSTATE_S3_BUCKET."
+            exit 1
+        fi
         echo "Using MinIO/S3 state backend at $S3_ENDPOINT (bucket: $S3_BUCKET)"
         cat > backend.tf << EOF
 terraform {
