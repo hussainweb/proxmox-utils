@@ -9,6 +9,7 @@ KEYCTL=true
 NODE="erebor"
 CORES=2
 MEMORY=2048
+SWAP=2048
 TEMPLATE="ubuntu-26.04-standard_26.04-1_amd64.tar.zst"
 TEMPLATE_VOLUME="local"
 PASSWORD=""
@@ -98,6 +99,10 @@ while [[ $# -gt 0 ]]; do
             MEMORY="$2"
             shift 2
             ;;
+        --swap)
+            SWAP="$2"
+            shift 2
+            ;;
         --ssh-key)
             SSH_PUBLIC_KEY_PATH="$2"
             shift 2
@@ -151,6 +156,7 @@ template     = "$FULL_TEMPLATE"
 disk_size    = "$DISK"
 cores        = $CORES
 memory       = $MEMORY
+swap         = $SWAP
 unprivileged = $UNPRIVILEGED
 nesting      = $NESTING
 keyctl       = $KEYCTL

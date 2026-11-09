@@ -30,6 +30,12 @@ variable "memory" {
   default     = 2048
 }
 
+variable "swap" {
+  description = "Amount of swap in MB"
+  type        = number
+  default     = 2048
+}
+
 variable "unprivileged" {
   description = "Whether the container should be unprivileged (1) or privileged (0)"
   type        = bool

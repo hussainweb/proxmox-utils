@@ -53,6 +53,7 @@ resource "proxmox_virtual_environment_container" "container" {
 
   memory {
     dedicated = var.memory
+    swap      = var.swap
   }
 
   features {
